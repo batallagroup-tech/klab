@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { QuickButtonsGrid } from './components/QuickButtonsGrid';
 import { NumericKeypad } from './components/NumericKeypad';
@@ -33,8 +33,31 @@ import {
 } from './lib/storage';
 import { checkAndRunAutoBackup } from './lib/backup';
 import { triggerHaptic } from './lib/soundbox';
-import { ArrowRight, Trash2, ShieldCheck, Sparkles, HelpCircle, Banknote, QrCode } from 'lucide-react';
+import { ArrowRight, Trash2, Sparkles, Banknote, QrCode, Calculator, SlidersHorizontal } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
+
+/**
+ * Evaluador aritmético seguro para operaciones de venta rápida (+, -, *, /)
+ */
+function evaluateArithmeticExpression(expr: string): number {
+  if (!expr.trim()) return 0;
+  try {
+    // Sanitizar solo números y operadores básicos permitidos
+    const sanitized = expr.replace(/[^0-9+\-*/.]/g, '');
+    if (!sanitized) return 0;
+
+    // Si termina en operador, evaluar la porción previa
+    const cleanExpr = sanitized.replace(/[+\-*/.]+$/, '');
+    if (!cleanExpr) return 0;
+
+    // Uso de Function controlada con scope restringido a cálculo matemático
+    const result = new Function(`"use strict"; return (${cleanExpr})`)();
+    const num = parseFloat(result);
+    return isFinite(num) && num > 0 ? num : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export const App: React.FC = () => {
   const [profile, setProfile] = useState<MerchantProfile>(loadProfile);
@@ -47,9 +70,12 @@ export const App: React.FC = () => {
     return !isOnboardingCompleted() && !profile.isConfigured;
   });
 
-  // Cart & Amount state
+  // Toggle to show/hide product catalog buttons
+  const [showQuickCatalog, setShowQuickCatalog] = useState<boolean>(() => products.length > 0);
+
+  // Cart & Arithmetic Expression state
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [manualAmountStr, setManualAmountStr] = useState<string>('');
+  const [calcExpression, setCalcExpression] = useState<string>('');
 
   // Modals state
   const [showActiveCharge, setShowActiveCharge] = useState<boolean>(false);
@@ -72,17 +98,19 @@ export const App: React.FC = () => {
   }, [sales]);
 
   // Calculate cart items and totals
-  const cartItems: CartItem[] = Object.entries(cart)
-    .filter(([_, qty]) => qty > 0)
-    .map(([id, qty]) => {
-      const product = products.find((p) => p.id === id);
-      return product ? { product, qty } : null;
-    })
-    .filter(Boolean) as CartItem[];
+  const cartItems: CartItem[] = useMemo(() => {
+    return Object.entries(cart)
+      .filter(([_, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const product = products.find((p) => p.id === id);
+        return product ? { product, qty } : null;
+      })
+      .filter(Boolean) as CartItem[];
+  }, [cart, products]);
 
   const cartTotal = cartItems.reduce((acc, item) => acc + item.product.price * item.qty, 0);
-  const manualAmount = parseFloat(manualAmountStr) || 0;
-  const grandTotal = cartTotal + manualAmount;
+  const evaluatedCalc = useMemo(() => evaluateArithmeticExpression(calcExpression), [calcExpression]);
+  const grandTotal = cartTotal + evaluatedCalc;
 
   // Cart Handlers
   const handleAddItem = (p: QuickProduct) => {
@@ -101,25 +129,52 @@ export const App: React.FC = () => {
     });
   };
 
-  // Keypad Handlers
-  const handleDigit = (digit: string) => {
-    if (digit === '.' && manualAmountStr.includes('.')) return;
-    if (manualAmountStr.length >= 7) return;
-    setManualAmountStr((prev) => (prev === '0' && digit !== '.' ? digit : prev + digit));
+  // Arithmetic Keypad Handlers
+  const handleDigit = (char: string) => {
+    setCalcExpression((prev) => {
+      // Evitar operadores duplicados
+      if (char.includes('+') || char.includes('-') || char.includes('*') || char.includes('/')) {
+        if (!prev) return '';
+        const trimmed = prev.trim();
+        if (/[+\-*/]$/.test(trimmed)) {
+          return trimmed.slice(0, -1) + char;
+        }
+      }
+      return prev + char;
+    });
   };
 
   const handleClear = () => {
     setCart({});
-    setManualAmountStr('');
+    setCalcExpression('');
   };
 
   const handleBackspace = () => {
-    setManualAmountStr((prev) => prev.slice(0, -1));
+    setCalcExpression((prev) => {
+      if (!prev) return '';
+      const trimmed = prev.trim();
+      if (/[+\-*/]$/.test(trimmed)) {
+        return trimmed.slice(0, -1).trim();
+      }
+      return prev.slice(0, -1);
+    });
   };
 
-  const handleAddQuickAmount = (val: number) => {
-    const current = parseFloat(manualAmountStr) || 0;
-    setManualAmountStr((current + val).toString());
+  const handleEquals = () => {
+    const total = evaluateArithmeticExpression(calcExpression);
+    if (total > 0) {
+      setCalcExpression(total.toString());
+    }
+  };
+
+  const handleQuickAdd = (amount: number) => {
+    setCalcExpression((prev) => {
+      if (!prev.trim()) {
+        return amount.toString();
+      }
+      const total = evaluateArithmeticExpression(prev);
+      return `${total} + ${amount}`;
+    });
   };
 
   // Charge Trigger
@@ -171,6 +226,9 @@ export const App: React.FC = () => {
   const handleSaveProducts = (newProducts: QuickProduct[]) => {
     saveProducts(newProducts);
     setProducts(newProducts);
+    if (newProducts.length > 0) {
+      setShowQuickCatalog(true);
+    }
   };
 
   // Handle data restored from backup
@@ -192,6 +250,7 @@ export const App: React.FC = () => {
     setProducts(initialProducts);
     setOnboardingCompleted(true);
     setShowOnboarding(false);
+    setShowQuickCatalog(initialProducts.length > 0);
     toast.success(`¡Bienvenido a Klab, ${newProfile.stallName}!`, {
       duration: 3500,
     });
@@ -227,13 +286,14 @@ export const App: React.FC = () => {
 
       {/* Main Terminal Workspace */}
       <main className="flex-1 p-3.5 space-y-3 overflow-y-auto">
-        {/* Total Display Card */}
+        {/* Total Display Card with Arithmetic Formula View */}
         <div className="bg-[#101420] border border-slate-800 rounded-3xl p-4 shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Total a Cobrar
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Calculator className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Total a Cobrar</span>
             </span>
-            {grandTotal > 0 && (
+            {(grandTotal > 0 || calcExpression.length > 0) && (
               <button
                 type="button"
                 onClick={() => {
@@ -247,24 +307,32 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          {/* Big Amount Number */}
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white flex items-baseline">
-              <span className="text-emerald-400 text-3xl sm:text-4xl mr-1">$</span>
-              <span>{grandTotal.toFixed(2)}</span>
-              <span className="text-xs sm:text-sm font-sans font-bold text-slate-500 ml-2 uppercase">
-                MXN
-              </span>
-            </div>
+          {/* Big Amount & Expression Formula */}
+          <div className="space-y-1">
+            {calcExpression.length > 0 && (
+              <div className="text-xs font-mono text-slate-400 font-bold truncate">
+                Operación: <span className="text-cyan-400">{calcExpression}</span>
+              </div>
+            )}
 
-            {/* Methods Badges */}
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                <QrCode className="w-3 h-3" /> SPEI 0%
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
-                <Banknote className="w-3 h-3" /> Efectivo
-              </span>
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white flex items-baseline">
+                <span className="text-emerald-400 text-3xl sm:text-4xl mr-1">$</span>
+                <span>{grandTotal.toFixed(2)}</span>
+                <span className="text-xs sm:text-sm font-sans font-bold text-slate-500 ml-2 uppercase">
+                  MXN
+                </span>
+              </div>
+
+              {/* Methods Badges */}
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                  <QrCode className="w-3 h-3" /> SPEI 0%
+                </span>
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
+                  <Banknote className="w-3 h-3" /> Efectivo
+                </span>
+              </div>
             </div>
           </div>
 
@@ -285,36 +353,58 @@ export const App: React.FC = () => {
                   </span>
                 </span>
               ))}
-              {manualAmount > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[11px] font-bold text-amber-300 shrink-0">
-                  <span>⌨️</span> +${manualAmount.toFixed(2)}
-                </span>
-              )}
             </div>
           )}
         </div>
 
-        {/* Quick Products Grid */}
-        <QuickButtonsGrid
-          products={products}
-          cart={cart}
-          onAddItem={handleAddItem}
-          onRemoveItem={handleRemoveItem}
-          onOpenProductManager={() => setShowProductManager(true)}
-        />
+        {/* Optional Quick Catalog (Only if merchant enables/adds products) */}
+        {products.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <button
+                type="button"
+                onClick={() => setShowQuickCatalog(!showQuickCatalog)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-200 flex items-center gap-1.5 active:scale-95 transition"
+              >
+                <span>{showQuickCatalog ? '▼' : '▶'}</span>
+                <span>Botonera de Catálogo ({products.length})</span>
+              </button>
 
-        {/* Numeric Keypad */}
+              <button
+                type="button"
+                onClick={() => setShowProductManager(true)}
+                className="text-[11px] text-slate-400 hover:text-emerald-400 font-semibold flex items-center gap-1 active:scale-95 transition"
+              >
+                <SlidersHorizontal className="w-3 h-3" /> Editar
+              </button>
+            </div>
+
+            {showQuickCatalog && (
+              <QuickButtonsGrid
+                products={products}
+                cart={cart}
+                onAddItem={handleAddItem}
+                onRemoveItem={handleRemoveItem}
+                onOpenProductManager={() => setShowProductManager(true)}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Full POS Arithmetic Calculator */}
         <NumericKeypad
-          currentAmount={manualAmount}
+          expression={calcExpression}
+          evaluatedTotal={evaluatedCalc}
           onDigit={handleDigit}
-          onClear={() => setManualAmountStr('')}
+          onClear={() => setCalcExpression('')}
           onBackspace={handleBackspace}
-          onAddQuickAmount={handleAddQuickAmount}
+          onEquals={handleEquals}
+          onQuickAdd={handleQuickAdd}
         />
       </main>
 
       {/* Charge Action Button */}
-      <footer className="p-3.5 bg-[#0b0e17] border-t border-slate-800/90 shadow-2xl">
+      <footer className="p-3.5 bg-[#0b0e17] border-t border-slate-800/90 shadow-2xl pb-[calc(env(safe-area-inset-bottom,0px)+14px)]">
         <button
           type="button"
           onClick={handleStartCharge}

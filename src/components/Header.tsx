@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   const bank = MEXICAN_BANKS[profile.bankCode];
 
   return (
-    <header className="px-4 py-3 bg-[#0d111a]/95 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-20 select-none">
+    <header className="px-4 pb-3 bg-[#0d111a] border-b border-slate-800/80 sticky top-0 z-20 select-none pt-[calc(env(safe-area-inset-top,0px)+12px)] shadow-md">
       <div className="max-w-md mx-auto flex items-center justify-between gap-2">
         {/* Business Avatar & Info */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">

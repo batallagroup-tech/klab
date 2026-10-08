@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import { MerchantProfile, BusinessCategory, QuickProduct } from '../types';
 import {
-  Store,
-  CreditCard,
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Building2,
   ShieldCheck,
   Sparkles,
   AlertCircle,
-  HelpCircle,
+  Calculator,
 } from 'lucide-react';
 import { MEXICAN_BANKS, validateCLABE, formatCLABE, detectBankByClabe } from '../lib/banks';
 import { CATEGORY_TEMPLATES } from '../lib/storage';
@@ -28,8 +25,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [stallName, setStallName] = useState<string>(initialProfile.stallName || '');
   const [tagline, setTagline] = useState<string>(initialProfile.tagline || '');
-  const [category, setCategory] = useState<BusinessCategory>(initialProfile.businessCategory || 'comida');
-  const [loadTemplates, setLoadTemplates] = useState<boolean>(true);
+  const [category, setCategory] = useState<BusinessCategory>(initialProfile.businessCategory || 'general');
+  const [loadTemplates, setLoadTemplates] = useState<boolean>(false);
 
   const [clabe, setClabe] = useState<string>(initialProfile.clabe || '');
   const [ownerName, setOwnerName] = useState<string>(initialProfile.name || '');
@@ -95,13 +92,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   };
 
   const categoriesList: { id: BusinessCategory; label: string; emoji: string; desc: string }[] = [
-    { id: 'comida', label: 'Comida & Bebidas', emoji: '🍽️', desc: 'Restaurantes, tacos, cafeterías, fondas' },
+    { id: 'general', label: 'Terminal Calculadora Directa', emoji: '🧮', desc: 'Cobro rápido con teclado numérico y operaciones (Recomendado)' },
+    { id: 'comida', label: 'Comida & Bebidas', emoji: '🍽️', desc: 'Puestos de comida, fondas, cafeterías' },
     { id: 'abarrotes', label: 'Abarrotes & Tiendita', emoji: '🏪', desc: 'Minisúper, tienditas, misceláneas' },
     { id: 'belleza', label: 'Belleza & Barbería', emoji: '✂️', desc: 'Salones, estéticas, barberías, uñas' },
     { id: 'ropa', label: 'Ropa & Calzado', emoji: '👕', desc: 'Boutiques, zapaterías, accesorios' },
     { id: 'servicios', label: 'Servicios & Oficios', emoji: '🛠️', desc: 'Talleres, reparaciones, mantenimiento' },
     { id: 'tecnologia', label: 'Tecnología & Papelería', emoji: '📱', desc: 'Accesorios celular, copias, papelería' },
-    { id: 'general', label: 'Cobro Directo / General', emoji: '📦', desc: 'Sin productos predefinidos, solo teclado' },
   ];
 
   return (
@@ -154,7 +151,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     type="text"
                     value={stallName}
                     onChange={(e) => setStallName(e.target.value)}
-                    placeholder="Ej. Abarrotes San Miguel, Café Central..."
+                    placeholder="Ej. Tacos El Rey, Abarrotes San Miguel..."
                     autoFocus
                     className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium text-sm focus:outline-none focus:border-emerald-500 transition"
                   />
@@ -168,7 +165,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     type="text"
                     value={tagline}
                     onChange={(e) => setTagline(e.target.value)}
-                    placeholder="Ej. Centro Histórico • Local 12"
+                    placeholder="Ej. Frente al parque • Puesto 4"
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
@@ -181,10 +178,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <div className="space-y-3.5 animate-in fade-in duration-150">
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
-                  ¿Cuál es el giro de tu negocio?
+                  ¿Cómo prefieres cobrar?
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Selecciona tu categoría para adaptar tu botonera de cobro rápido.
+                  Elige si prefieres usar la terminal como calculadora libre o con catálogo de botones.
                 </p>
               </div>
 
@@ -225,7 +222,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     onChange={(e) => setLoadTemplates(e.target.checked)}
                     className="rounded border-slate-700 text-emerald-500 focus:ring-0"
                   />
-                  <span>Precargar botones sugeridos de {CATEGORY_TEMPLATES[category].label} (podrás editarlos o borrarlos luego)</span>
+                  <span>Cargar sugerencias de botones para {CATEGORY_TEMPLATES[category].label}</span>
                 </label>
               )}
             </div>
@@ -236,10 +233,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <div className="space-y-4 animate-in fade-in duration-150">
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
-                  ¿Dónde recibirás tus pagos?
+                  ¿Dónde recibirás tu dinero?
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Ingresa tu cuenta bancaria real (CLABE de 18 dígitos). El dinero de las transferencias llegará directo a tu cuenta sin intermediarios.
+                  Ingresa tu cuenta bancaria real (CLABE de 18 dígitos). Las transferencias SPEI de tus clientes caerán directo a esta cuenta.
                 </p>
               </div>
 
@@ -297,17 +294,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     type="text"
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
-                    placeholder="Nombre completo como aparece en tu banco"
+                    placeholder="Nombre como aparece en tu estado de cuenta"
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 transition"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Es el beneficiario que verá el cliente al escanear tu QR.
-                  </p>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">
-                    Teléfono celular (Opcional - Dimo / WhatsApp)
+                    Teléfono celular (WhatsApp para comprobantes)
                   </label>
                   <input
                     type="tel"
@@ -335,7 +329,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   ¡Terminal lista para cobrar!
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Revisa los datos de tu comercio antes de iniciar.
+                  Tus datos bancarios han quedado registrados.
                 </p>
               </div>
 
@@ -345,7 +339,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   <strong className="text-white">{stallName}</strong>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Giro:</span>
+                  <span className="text-slate-400">Modalidad:</span>
                   <span className="text-emerald-400 font-semibold">{CATEGORY_TEMPLATES[category].label}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
@@ -364,7 +358,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
               <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Cobro 0% comisión directo a tu cuenta bancaria.</span>
+                <span>0% de comisiones directo a tu cuenta bancaria.</span>
               </p>
             </div>
           )}

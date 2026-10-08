@@ -1,103 +1,256 @@
 import React from 'react';
-import { Delete, RotateCcw } from 'lucide-react';
+import { Delete, RotateCcw, Equal, Plus, Minus, X, Divide } from 'lucide-react';
 import { triggerHaptic } from '../lib/soundbox';
 
 interface NumericKeypadProps {
-  currentAmount: number;
-  onDigit: (digit: string) => void;
+  expression: string;
+  evaluatedTotal: number;
+  onDigit: (char: string) => void;
   onClear: () => void;
   onBackspace: () => void;
-  onAddQuickAmount: (amount: number) => void;
+  onEquals: () => void;
+  onQuickAdd: (amount: number) => void;
 }
 
 export const NumericKeypad: React.FC<NumericKeypadProps> = ({
-  currentAmount,
+  expression,
+  evaluatedTotal,
   onDigit,
   onClear,
   onBackspace,
-  onAddQuickAmount,
+  onEquals,
+  onQuickAdd,
 }) => {
-  const digits = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['.', '0', '00'],
-  ];
-
-  const quickAdders = [5, 10, 20, 50, 100];
+  const quickBils = [20, 50, 100, 200, 500];
 
   return (
     <div className="space-y-2 select-none">
-      {/* Quick Adders Row */}
+      {/* Quick Cash Adder Buttons */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
         <span className="text-[10px] uppercase font-bold text-slate-500 shrink-0 mr-0.5">Sumar:</span>
-        {quickAdders.map((val) => (
+        {quickBils.map((val) => (
           <button
             key={val}
             type="button"
             onClick={() => {
               triggerHaptic();
-              onAddQuickAmount(val);
+              onQuickAdd(val);
             }}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono font-bold text-emerald-400 shrink-0 active:scale-95 transition"
+            className="px-3 py-1.5 rounded-xl bg-[#111728] hover:bg-[#162038] border border-slate-800 text-xs font-mono font-bold text-emerald-400 shrink-0 active:scale-95 transition shadow-sm"
           >
             +${val}
           </button>
         ))}
       </div>
 
-      {/* Grid Keypad */}
+      {/* Main Full Arithmetic POS Keypad (4 columns x 5 rows) */}
       <div className="grid grid-cols-4 gap-1.5">
-        {/* Digits (3 cols) */}
-        <div className="col-span-3 grid grid-cols-3 gap-1.5">
-          {digits.map((row, rIdx) => (
-            <React.Fragment key={rIdx}>
-              {row.map((btn) => (
-                <button
-                  key={btn}
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic();
-                    onDigit(btn);
-                  }}
-                  className="h-12 sm:h-13 rounded-xl bg-[#111622] hover:bg-[#161c2b] border border-slate-800/80 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 active:border-emerald-500/30 transition shadow-sm"
-                >
-                  {btn}
-                </button>
-              ))}
-            </React.Fragment>
-          ))}
-        </div>
+        {/* ROW 1: C, ⌫, ÷, × */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onClear();
+          }}
+          className="h-12 rounded-xl bg-[#1d1520] hover:bg-red-950/40 border border-red-900/40 text-red-400 font-bold text-base flex items-center justify-center active:scale-95 transition"
+          title="Borrar todo"
+        >
+          <RotateCcw className="w-4 h-4 mr-1 text-red-400" />
+          <span>C</span>
+        </button>
 
-        {/* Action Column (1 col) */}
-        <div className="col-span-1 grid grid-rows-2 gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic();
-              onBackspace();
-            }}
-            className="rounded-xl bg-[#17141f] hover:bg-red-950/30 border border-slate-800 text-red-400 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition"
-            title="Borrar dígito"
-          >
-            <Delete className="w-4 h-4" />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Borrar</span>
-          </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onBackspace();
+          }}
+          className="h-12 rounded-xl bg-[#161a29] hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold flex items-center justify-center active:scale-95 transition"
+          title="Borrar último"
+        >
+          <Delete className="w-4 h-4" />
+        </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic();
-              onClear();
-            }}
-            disabled={currentAmount === 0}
-            className="rounded-xl bg-[#131622] hover:bg-slate-800 border border-slate-800 text-slate-400 disabled:opacity-40 disabled:pointer-events-none flex flex-col items-center justify-center gap-0.5 active:scale-95 transition"
-            title="Limpiar monto manual"
-          >
-            <RotateCcw className="w-4 h-4 text-amber-400" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">Limpiar</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit(' / ');
+          }}
+          className="h-12 rounded-xl bg-[#13192e] hover:bg-indigo-950/40 border border-slate-800 text-cyan-400 font-bold text-lg flex items-center justify-center active:scale-95 transition"
+        >
+          <Divide className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit(' * ');
+          }}
+          className="h-12 rounded-xl bg-[#13192e] hover:bg-indigo-950/40 border border-slate-800 text-cyan-400 font-bold text-lg flex items-center justify-center active:scale-95 transition"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* ROW 2: 7, 8, 9, - */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('7');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          7
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('8');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          8
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('9');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          9
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit(' - ');
+          }}
+          className="h-12 rounded-xl bg-[#13192e] hover:bg-indigo-950/40 border border-slate-800 text-amber-400 font-bold text-lg flex items-center justify-center active:scale-95 transition"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+
+        {/* ROW 3: 4, 5, 6, + */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('4');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          4
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('5');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          5
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('6');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          6
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit(' + ');
+          }}
+          className="h-12 rounded-xl bg-[#13192e] hover:bg-emerald-950/40 border border-slate-800 text-emerald-400 font-bold text-xl flex items-center justify-center active:scale-95 transition"
+        >
+          <Plus className="w-5 h-5 stroke-[2.5]" />
+        </button>
+
+        {/* ROW 4: 1, 2, 3, = (Span 2 rows for =) */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('1');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          1
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('2');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          2
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('3');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          3
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onEquals();
+          }}
+          className="row-span-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 border border-emerald-400 text-slate-950 font-black text-2xl flex items-center justify-center active:scale-95 transition shadow-lg shadow-emerald-500/20"
+          title="Calcular total"
+        >
+          <Equal className="w-6 h-6 stroke-[3]" />
+        </button>
+
+        {/* ROW 5: 0, 00, . */}
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('0');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl sm:text-2xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          0
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('00');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-base sm:text-lg font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          00
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onDigit('.');
+          }}
+          className="h-12 sm:h-13 rounded-xl bg-[#111624] hover:bg-[#161c2e] border border-slate-800/90 text-white font-mono text-xl font-bold flex items-center justify-center active:scale-95 active:bg-emerald-500/10 transition shadow-sm"
+        >
+          .
+        </button>
       </div>
     </div>
   );

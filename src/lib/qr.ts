@@ -8,27 +8,27 @@ export interface QRPayloadOptions {
 }
 
 /**
- * Genera el payload estándar para escaneo en apps bancarias mexicanas (Banxico CoDi / SPEI)
- * y lectores inteligentes de cámara (Google Lens, iOS Camera).
- * Se mantiene estable y determinista sin números aleatorios que cambien el QR.
+ * Genera el enlace web oficial HTTPS que se abre inmediatamente en cualquier celular
+ * (iPhone, Android, Google Lens, WhatsApp, etc.) sin arrojar "No se encontraron datos utilizables".
+ * Muestra la presentación del puesto, marca Batalla Group, copia de CLABE en 1 clic y accesos a bancos.
  */
-export function buildQRPayload({ amount, profile, concept }: QRPayloadOptions): string {
-  const cleanClabe = profile.clabe.replace(/\D/g, '');
-  const cleanBeneficiary = profile.name || profile.stallName || 'COMERCIO';
-  const cleanConcept = concept || (amount > 0 ? `PAGO-${profile.stallName.replace(/\s+/g, '').slice(0, 10).toUpperCase()}` : 'PAGO');
+export function buildQRPayload({ amount, profile }: QRPayloadOptions): string {
+  const cleanClabe = (profile.clabe || '').replace(/\D/g, '');
+  const cleanBeneficiary = encodeURIComponent(profile.name || profile.stallName || 'Comercio');
+  const cleanBiz = encodeURIComponent(profile.stallName || 'Puesto / Comercio');
+  const cleanBank = encodeURIComponent(profile.bankName || 'Banco Receptor');
+  const cleanPhone = encodeURIComponent(profile.phoneDimo || '');
 
-  if (amount > 0) {
-    return `SPEI://CLABE:${cleanClabe}?banco=${encodeURIComponent(profile.bankName)}&monto=${amount.toFixed(2)}&concepto=${encodeURIComponent(cleanConcept)}&beneficiario=${encodeURIComponent(cleanBeneficiary)}`;
-  }
+  const baseUrl = 'https://batallagroup-tech.github.io/klab/pay.html';
+  const query = `c=${cleanClabe}&b=${cleanBank}&n=${cleanBeneficiary}&s=${cleanBiz}&p=${cleanPhone}&m=${amount > 0 ? amount.toFixed(2) : '0'}`;
 
-  // QR Estático de la cuenta (para mostrador o transferencias libres)
-  return `SPEI://CLABE:${cleanClabe}?banco=${encodeURIComponent(profile.bankName)}&beneficiario=${encodeURIComponent(cleanBeneficiary)}`;
+  return `${baseUrl}?${query}`;
 }
 
 /**
  * Genera Data URL del código QR en alta definición con diseño limpio y nítido.
  */
-export async function generateQRDataURL(text: string, size = 420): Promise<string> {
+export async function generateQRDataURL(text: string, size = 450): Promise<string> {
   try {
     return await QRCode.toDataURL(text, {
       width: size,

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pagar con SPEI — Desarrollado por Batalla Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #07090e;
+      color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 max-w-md mx-auto">
+  <div id="app" class="w-full space-y-4">
+    <!-- Header Batalla Group & Klab -->
+    <header class="flex items-center justify-between py-2 border-b border-slate-800/80">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-sm">
+          K
+        </div>
+        <div>
+          <span class="text-xs font-black tracking-wider text-white block leading-none">KLAB PAY</span>
+          <span class="text-[9px] font-bold text-slate-400 block tracking-tight">Desarrollado por Batalla Group</span>
+        </div>
+      </div>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+        SPEI 0% Comisión
+      </span>
+    </header>
+
+    <!-- Merchant Card -->
+    <div class="bg-[#0f1422] border border-slate-800 rounded-3xl p-5 shadow-xl text-center space-y-3 relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-28 h-28 bg-emerald-500/10 rounded-full blur-2xl"></div>
+      
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-bold text-emerald-400">
+        <span>🏪</span> <span id="bizTag">Comercio Verificado</span>
+      </div>
+
+      <div>
+        <h1 id="bizName" class="text-2xl font-black text-white tracking-tight leading-tight">Cargando Comercio...</h1>
+        <p id="bizOwner" class="text-xs text-slate-400 mt-0.5">Beneficiario: -</p>
+      </div>
+
+      <!-- Amount Input / Display -->
+      <div class="bg-[#141b2d] border border-slate-800 rounded-2xl p-4 text-center">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Monto a Transferir</span>
+        <div class="flex items-baseline justify-center gap-1">
+          <span class="text-emerald-400 text-3xl font-black font-mono">$</span>
+          <input
+            id="amountInput"
+            type="number"
+            step="any"
+            placeholder="0.00"
+            class="bg-transparent text-3xl sm:text-4xl font-black font-mono text-white text-center w-44 focus:outline-none border-b border-transparent focus:border-emerald-500 transition"
+          />
+          <span class="text-xs font-bold text-slate-500 uppercase">MXN</span>
+        </div>
+        <p id="amountHelp" class="text-[10px] text-slate-400 mt-1">Escribe la cantidad que vas a pagar.</p>
+      </div>
+
+      <!-- Bank Details & 1-Click Copy -->
+      <div class="bg-[#111728] border border-slate-800 rounded-2xl p-3.5 text-left space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold text-slate-400">Banco Receptor:</span>
+          <span id="bankName" class="text-xs font-bold text-white px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700">BBVA</span>
+        </div>
+
+        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[9px] uppercase font-bold text-slate-500 block">CLABE Interbancaria</span>
+            <span id="clabeDisplay" class="font-mono text-sm sm:text-base font-black text-emerald-400 tracking-wider block truncate">
+              0000 0000 0000 0000 00
+            </span>
+          </div>
+          <button
+            id="btnCopy"
+            onclick="copyClabe()"
+            class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 active:scale-95 transition shrink-0 shadow-md shadow-emerald-500/20"
+          >
+            <span>📋</span> <span id="copyText">Copiar</span>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+          <span>Concepto sugerido:</span>
+          <span id="conceptText" class="font-mono text-slate-200 font-bold">PAGO KLAB</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Open Banking Apps -->
+    <div class="space-y-2">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block px-1">
+        Abre la app de tu banco:
+      </span>
+      <div class="grid grid-cols-3 gap-2">
+        <a href="bbva://" class="p-2.5 rounded-2xl bg-[#0d162a] border border-blue-900/60 hover:border-blue-500 text-center active:scale-95 transition flex flex-col items-center justify-center gap-1">
+          <span class="w-6 h-6 rounded-lg bg-blue-600 text-white font-black text-[10px] flex items-center justify-center">BB</span>
+          <span class="text-[11px] font-bold text-white">BBVA</span>
+        </a>
+        <a href="nuapp://" class="p-2.5 rounded-2xl bg-[#1a0e2a] border border-purple-900/60 hover:purple-500 text-center active:scale-95 transition flex flex-col items-center justify-center gap-1">
+          <span class="w-6 h-6 rounded-lg bg-purple-600 text-white font-black text-[10px] flex items-center justify-center">Nu</span>
+          <span class="text-[11px] font-bold text-white">Nu México</span>
+        </a>
+        <a href="mercadopago://" class="p-2.5 rounded-2xl bg-[#0a1e28] border border-cyan-900/60 hover:border-cyan-500 text-center active:scale-95 transition flex flex-col items-center justify-center gap-1">
+          <span class="w-6 h-6 rounded-lg bg-cyan-500 text-slate-950 font-black text-[10px] flex items-center justify-center">MP</span>
+          <span class="text-[11px] font-bold text-white">Mercado Pago</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Voucher & Confirmation -->
+    <div class="bg-[#0f1422] border border-slate-800 rounded-2xl p-4 text-center space-y-2.5">
+      <div class="text-xs font-bold text-white">¿Ya realizaste la transferencia?</div>
+      <p class="text-[11px] text-slate-400">
+        El teléfono del vendedor anunciará tu pago automáticamente por bocina al recibir la confirmación de SPEI.
+      </p>
+      <button
+        onclick="sendVoucherWhatsApp()"
+        class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition"
+      >
+        <span>💬</span> <span>Enviar Comprobante por WhatsApp</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <footer class="text-center py-4 text-[11px] text-slate-500 space-y-1">
+    <p>Klab — Sistema de Cobro SPEI Directo 0% Comisiones</p>
+    <p class="text-[10px]">Batalla Group Tech • México</p>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 px-4 py-2 rounded-full font-bold text-xs shadow-2xl transition duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+    <span>✅</span> <span id="toastMsg">CLABE copiada al portapapeles</span>
+  </div>
+
+  <script>
+    // Parse URL query parameters
+    const params = new URLSearchParams(window.location.search);
+    const clabe = (params.get('c') || '').replace(/\D/g, '');
+    const bank = params.get('b') || 'Banco Receptor';
+    const owner = params.get('n') || '';
+    const biz = params.get('s') || 'Puesto / Comercio';
+    const amount = parseFloat(params.get('m')) || 0;
+    const phone = params.get('p') || '';
+
+    // Populate UI
+    document.getElementById('bizName').innerText = biz;
+    document.getElementById('bizOwner').innerText = 'Beneficiario: ' + (owner || biz);
+    document.getElementById('bankName').innerText = bank;
+    
+    // Format CLABE with spaces for readability
+    const formattedClabe = clabe.replace(/(\d{3})(\d{3})(\d{11})(\d{1})/, '$1 $2 $3 $4') || clabe;
+    document.getElementById('clabeDisplay').innerText = formattedClabe || 'Sin CLABE registrada';
+
+    const amountInput = document.getElementById('amountInput');
+    if (amount > 0) {
+      amountInput.value = amount.toFixed(2);
+      amountInput.readOnly = true;
+      document.getElementById('amountHelp').innerText = 'Monto fijado por el vendedor.';
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    function copyClabe() {
+      if (!clabe) {
+        showToast('No hay CLABE registrada');
+        return;
+      }
+      navigator.clipboard.writeText(clabe).then(() => {
+        showToast('¡CLABE copiada! Abre tu app bancaria.');
+        document.getElementById('copyText').innerText = '¡Copiada!';
+        setTimeout(() => {
+          document.getElementById('copyText').innerText = 'Copiar';
+        }, 2500);
+      });
+    }
+
+    function sendVoucherWhatsApp() {
+      const currentAmount = parseFloat(amountInput.value) || amount || 0;
+      const text = encodeURIComponent(
+        `✅ *Comprobante de Pago SPEI*\n🏪 *Negocio:* ${biz}\n💵 *Monto:* $${currentAmount.toFixed(2)} MXN\n🏦 *Banco:* ${bank}\n🔢 *CLABE:* ${clabe}\n👤 *Titular:* ${owner || biz}\n⚡ *Vía:* Klab — Desarrollado por Batalla Group`
+      );
+      const url = phone ? `https://wa.me/52${phone}?text=${text}` : `https://wa.me/?text=${text}`;
+      window.open(url, '_blank');
+    }
+  </script>
+</body>
+</html>
