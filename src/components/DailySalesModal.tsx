@@ -123,13 +123,13 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
 
             {/* Confirmation Box for Clear Today */}
             {confirmClearToday && (
-              <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-2xl space-y-2 text-center animate-in fade-in">
+              <div className="p-3.5 bg-red-950/50 border border-red-500/50 rounded-2xl space-y-2.5 text-center animate-in fade-in">
                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-400">
                   <AlertTriangle className="w-4 h-4" />
-                  <span>¿Borrar los cobros de hoy?</span>
+                  <span>¿Reiniciar el corte del día a $0.00?</span>
                 </div>
-                <p className="text-[11px] text-slate-300">
-                  El corte del día volverá a $0.00. Esta acción no se puede deshacer.
+                <p className="text-[11px] text-slate-300 leading-tight">
+                  Se borrarán los registros de cobro de hoy. Esta acción no se puede deshacer.
                 </p>
                 <div className="flex gap-2 justify-center pt-1">
                   <button
@@ -139,14 +139,47 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                       if (onClearTodaySales) onClearTodaySales();
                       setConfirmClearToday(false);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs active:scale-95 transition"
+                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs active:scale-95 transition shadow-lg shadow-red-600/30"
                   >
                     Sí, borrar corte de hoy
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClearToday(false)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs active:scale-95"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Box for Clear All History */}
+            {confirmClearAll && (
+              <div className="p-3.5 bg-red-950/50 border border-red-500/50 rounded-2xl space-y-2.5 text-center animate-in fade-in">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>¿Vaciar todo el historial acumulado?</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-tight">
+                  Se eliminarán todas las ventas pasadas registradas en el dispositivo.
+                </p>
+                <div className="flex gap-2 justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      if (onClearAllSales) onClearAllSales();
+                      setConfirmClearAll(false);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs active:scale-95 transition shadow-lg shadow-red-600/30"
+                  >
+                    Sí, vaciar todo el historial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearAll(false)}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs active:scale-95"
                   >
                     Cancelar
                   </button>
@@ -165,80 +198,110 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                     hour: '2-digit',
                     minute: '2-digit',
                   });
+                  const isDeletingThis = deletingSaleId === s.id;
 
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-[#131726] border border-slate-800/90 transition hover:border-slate-700 group"
+                      className="p-3 rounded-xl bg-[#131726] border border-slate-800/90 transition hover:border-slate-700 space-y-2"
                     >
-                      <div
-                        onClick={() => {
-                          if (onSelectSale) {
-                            triggerHaptic();
-                            onSelectSale(s);
-                          }
-                        }}
-                        className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
-                      >
+                      <div className="flex items-center justify-between">
                         <div
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
-                            s.method === 'cash'
-                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          }`}
+                          onClick={() => {
+                            if (onSelectSale) {
+                              triggerHaptic();
+                              onSelectSale(s);
+                            }
+                          }}
+                          className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
                         >
-                          {s.method === 'cash' ? (
-                            <Banknote className="w-4 h-4" />
-                          ) : (
-                            <QrCode className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white leading-tight truncate">
-                            {s.itemsSummary || 'Cobro directo'}
+                          <div
+                            className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
+                              s.method === 'cash'
+                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            }`}
+                          >
+                            {s.method === 'cash' ? (
+                              <Banknote className="w-4 h-4" />
+                            ) : (
+                              <QrCode className="w-4 h-4" />
+                            )}
                           </div>
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-2.5 h-2.5 shrink-0" />
-                            <span>{time}</span>
-                            <span>•</span>
-                            <span className="capitalize font-medium truncate">
-                              {s.method === 'cash'
-                                ? 'Efectivo'
-                                : s.bankName
-                                ? `SPEI (${s.bankName})`
-                                : 'SPEI QR'}
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white leading-tight truncate">
+                              {s.itemsSummary || 'Cobro directo'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="w-2.5 h-2.5 shrink-0" />
+                              <span>{time}</span>
+                              <span>•</span>
+                              <span className="capitalize font-medium truncate">
+                                {s.method === 'cash'
+                                  ? 'Efectivo'
+                                  : s.bankName
+                                  ? `SPEI (${s.bankName})`
+                                  : 'SPEI QR'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <div className="text-right">
+                            <span className="font-mono text-sm font-black text-emerald-400 block">
+                              +${s.amount.toFixed(2)}
+                            </span>
+                            <span className="text-[9px] font-bold text-emerald-500 flex items-center justify-end gap-0.5">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> Pagado
                             </span>
                           </div>
+
+                          {onDeleteSale && (
+                            <button
+                              type="button"
+                              title="Eliminar este cobro"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerHaptic();
+                                setDeletingSaleId(isDeletingThis ? null : s.id);
+                              }}
+                              className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center active:scale-95 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <div className="text-right">
-                          <span className="font-mono text-sm font-black text-emerald-400 block">
-                            +${s.amount.toFixed(2)}
+                      {/* Inline Delete Confirmation Card for this sale */}
+                      {isDeletingThis && (
+                        <div className="p-2.5 bg-red-950/40 border border-red-500/40 rounded-xl flex items-center justify-between gap-2 animate-in fade-in">
+                          <span className="text-[11px] text-red-300 font-bold">
+                            ¿Eliminar venta de ${s.amount.toFixed(2)}?
                           </span>
-                          <span className="text-[9px] font-bold text-emerald-500 flex items-center justify-end gap-0.5">
-                            <CheckCircle2 className="w-2.5 h-2.5" /> Pagado
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                triggerHaptic();
+                                if (onDeleteSale) onDeleteSale(s.id);
+                                setDeletingSaleId(null);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-black active:scale-95"
+                            >
+                              Eliminar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingSaleId(null)}
+                              className="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-bold"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         </div>
-
-                        {onDeleteSale && (
-                          <button
-                            type="button"
-                            title="Eliminar este cobro"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerHaptic();
-                              if (window.confirm(`¿Eliminar cobro de $${s.amount.toFixed(2)}?`)) {
-                                onDeleteSale(s.id);
-                              }
-                            }}
-                            className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center active:scale-95 transition opacity-80 group-hover:opacity-100"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -268,9 +331,7 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
               type="button"
               onClick={() => {
                 triggerHaptic();
-                if (window.confirm('¿Deseas vaciar todo el historial histórico de ventas acumulado?')) {
-                  onClearAllSales();
-                }
+                setConfirmClearAll(true);
               }}
               className="py-2.5 px-3 rounded-xl bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 text-red-300 font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition"
             >

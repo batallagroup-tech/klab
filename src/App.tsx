@@ -70,8 +70,8 @@ export const App: React.FC = () => {
     return !isOnboardingCompleted() && !profile.isConfigured;
   });
 
-  // Toggle to show/hide product catalog buttons
-  const [showQuickCatalog, setShowQuickCatalog] = useState<boolean>(() => products.length > 0);
+  // Toggle to show/hide product catalog buttons (hidden by default)
+  const [showQuickCatalog, setShowQuickCatalog] = useState<boolean>(false);
 
   // Cart & Arithmetic Expression state
   const [cart, setCart] = useState<Record<string, number>>({});
