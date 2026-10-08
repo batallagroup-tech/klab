@@ -1,6 +1,6 @@
 import React from 'react';
 import { SaleRecord, DailyStats } from '../types';
-import { X, TrendingUp, Clock, CheckCircle2, Banknote, QrCode, CreditCard } from 'lucide-react';
+import { X, TrendingUp, Clock, CheckCircle2, Banknote, QrCode, FileSpreadsheet, Cloud } from 'lucide-react';
 import { triggerHaptic } from '../lib/soundbox';
 
 interface DailySalesModalProps {
@@ -8,6 +8,7 @@ interface DailySalesModalProps {
   dailyStats: DailyStats;
   onClose: () => void;
   onSelectSale?: (sale: SaleRecord) => void;
+  onOpenBackup?: () => void;
 }
 
 export const DailySalesModal: React.FC<DailySalesModalProps> = ({
@@ -15,6 +16,7 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
   dailyStats,
   onClose,
   onSelectSale,
+  onOpenBackup,
 }) => {
   const today = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter((s) => {
@@ -159,15 +161,29 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#131726] border-t border-slate-800 flex justify-end">
+        {/* Footer Actions */}
+        <div className="p-4 bg-[#131726] border-t border-slate-800 flex flex-col sm:flex-row gap-2">
+          {onOpenBackup && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic();
+                onOpenBackup();
+              }}
+              className="flex-1 py-2.5 px-3 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Exportar Excel / Nube</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => {
               triggerHaptic();
               onClose();
             }}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs active:scale-95 transition"
+            className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs active:scale-95 transition"
           >
             Cerrar
           </button>

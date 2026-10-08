@@ -10,6 +10,7 @@ import {
   Building2,
   RotateCcw,
   Sparkles,
+  Cloud,
 } from 'lucide-react';
 import { MEXICAN_BANKS, validateCLABE, formatCLABE, detectBankByClabe } from '../lib/banks';
 import { CATEGORY_TEMPLATES } from '../lib/storage';
@@ -18,6 +19,7 @@ import { announcePayment, triggerHaptic } from '../lib/soundbox';
 interface SettingsModalProps {
   profile: MerchantProfile;
   onSaveProfile: (profile: MerchantProfile) => void;
+  onOpenBackup?: () => void;
   onResetOnboarding?: () => void;
   onClose: () => void;
 }
@@ -25,6 +27,7 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   profile,
   onSaveProfile,
+  onOpenBackup,
   onResetOnboarding,
   onClose,
 }) => {
@@ -319,7 +322,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Section 4: Re-run setup */}
+          {/* Section 5: Backup & Cloud Google Account */}
+          {onOpenBackup && (
+            <div className="pt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  onOpenBackup();
+                }}
+                className="w-full p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800/90 border border-slate-700/70 text-left flex items-center justify-between transition group active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Cloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      Copia de Seguridad & Cuenta de Google
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                      Guarda tu historial, catálogo y cuentas en la nube
+                    </span>
+                  </div>
+                </div>
+
+                <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-0.5 transition-transform">
+                  Abrir →
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Section 6: Re-run setup */}
           {onResetOnboarding && (
             <div className="pt-2 border-t border-slate-800/80 text-center">
               <button

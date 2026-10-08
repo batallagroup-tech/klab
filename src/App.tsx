@@ -10,6 +10,7 @@ import { DailySalesModal } from './components/DailySalesModal';
 import { SoundboxGuideModal } from './components/SoundboxGuideModal';
 import { DigitalReceiptModal } from './components/DigitalReceiptModal';
 import { OnboardingModal } from './components/OnboardingModal';
+import { BackupModal } from './components/BackupModal';
 
 import {
   MerchantProfile,
@@ -30,6 +31,7 @@ import {
   isOnboardingCompleted,
   setOnboardingCompleted,
 } from './lib/storage';
+import { checkAndRunAutoBackup } from './lib/backup';
 import { triggerHaptic } from './lib/soundbox';
 import { ArrowRight, Trash2, ShieldCheck, Sparkles, HelpCircle, Banknote, QrCode } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
@@ -56,7 +58,13 @@ export const App: React.FC = () => {
   const [showProductManager, setShowProductManager] = useState<boolean>(false);
   const [showDailyStats, setShowDailyStats] = useState<boolean>(false);
   const [showSoundboxGuide, setShowSoundboxGuide] = useState<boolean>(false);
+  const [showBackup, setShowBackup] = useState<boolean>(false);
   const [receiptSale, setReceiptSale] = useState<SaleRecord | null>(null);
+
+  // Auto-backup verification on app startup
+  useEffect(() => {
+    checkAndRunAutoBackup();
+  }, []);
 
   // Sync daily stats whenever sales change
   useEffect(() => {
@@ -163,6 +171,17 @@ export const App: React.FC = () => {
   const handleSaveProducts = (newProducts: QuickProduct[]) => {
     saveProducts(newProducts);
     setProducts(newProducts);
+  };
+
+  // Handle data restored from backup
+  const handleDataRestored = () => {
+    const updatedProfile = loadProfile();
+    const updatedProducts = loadProducts();
+    const updatedSales = loadSales();
+    setProfile(updatedProfile);
+    setProducts(updatedProducts);
+    setSales(updatedSales);
+    setDailyStats(getDailyStats(updatedSales));
   };
 
   // Onboarding Complete
@@ -335,6 +354,10 @@ export const App: React.FC = () => {
         <SettingsModal
           profile={profile}
           onSaveProfile={handleSaveProfile}
+          onOpenBackup={() => {
+            setShowSettings(false);
+            setShowBackup(true);
+          }}
           onResetOnboarding={() => {
             setShowSettings(false);
             setShowOnboarding(true);
@@ -348,6 +371,10 @@ export const App: React.FC = () => {
         <DailySalesModal
           sales={sales}
           dailyStats={dailyStats}
+          onOpenBackup={() => {
+            setShowDailyStats(false);
+            setShowBackup(true);
+          }}
           onSelectSale={(sale) => {
             setShowDailyStats(false);
             setReceiptSale(sale);
@@ -382,7 +409,15 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 7. Digital Receipt Voucher */}
+      {/* 7. Cloud Backup & Accounting Modal */}
+      {showBackup && (
+        <BackupModal
+          onClose={() => setShowBackup(false)}
+          onDataRestored={handleDataRestored}
+        />
+      )}
+
+      {/* 8. Digital Receipt Voucher */}
       {receiptSale && (
         <DigitalReceiptModal
           sale={receiptSale}
