@@ -9,6 +9,7 @@ import { ProductManagerModal } from './components/ProductManagerModal';
 import { DailySalesModal } from './components/DailySalesModal';
 import { SoundboxGuideModal } from './components/SoundboxGuideModal';
 import { DigitalReceiptModal } from './components/DigitalReceiptModal';
+import { OnboardingModal } from './components/OnboardingModal';
 
 import {
   MerchantProfile,
@@ -27,9 +28,11 @@ import {
   loadSales,
   saveSale,
   getDailyStats,
+  isOnboardingCompleted,
+  setOnboardingCompleted,
 } from './lib/storage';
 import { triggerHaptic } from './lib/soundbox';
-import { ArrowRight, Trash2, Volume2, ShieldCheck, Sparkles, HelpCircle, Wifi, QrCode } from 'lucide-react';
+import { ArrowRight, Trash2, ShieldCheck, Sparkles, HelpCircle, Wifi, QrCode } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 export const App: React.FC = () => {
@@ -37,6 +40,11 @@ export const App: React.FC = () => {
   const [products, setProducts] = useState<QuickProduct[]>(loadProducts);
   const [sales, setSales] = useState<SaleRecord[]>(loadSales);
   const [dailyStats, setDailyStats] = useState<DailyStats>(() => getDailyStats(loadSales()));
+
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    return !isOnboardingCompleted() && !profile.isConfigured;
+  });
 
   // Cart & Amount state
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -141,13 +149,13 @@ export const App: React.FC = () => {
 
     const methodLabel =
       method === 'nfc_card'
-        ? `💳 Tarjeta ${cardDetails?.brand || ''} aprobada`
+        ? `Tarjeta ${cardDetails?.brand || ''}`
         : method === 'cash'
-        ? '💵 Pago en efectivo'
-        : '📱 SPEI QR recibido';
+        ? 'Efectivo'
+        : 'SPEI QR';
 
-    toast.success(`¡Venta de $${amount.toFixed(2)} (${methodLabel}) registrada!`, {
-      duration: 3500,
+    toast.success(`Venta de $${amount.toFixed(2)} (${methodLabel}) registrada`, {
+      duration: 3000,
     });
   };
 
@@ -163,9 +171,30 @@ export const App: React.FC = () => {
     setProducts(newProducts);
   };
 
+  // Onboarding Complete
+  const handleOnboardingComplete = (newProfile: MerchantProfile, initialProducts: QuickProduct[]) => {
+    saveProfile(newProfile);
+    setProfile(newProfile);
+    saveProducts(initialProducts);
+    setProducts(initialProducts);
+    setOnboardingCompleted(true);
+    setShowOnboarding(false);
+    toast.success(`¡Bienvenido a Klab, ${newProfile.stallName}!`, {
+      duration: 3500,
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#090a0f] text-slate-100 flex flex-col justify-between max-w-md mx-auto relative select-none">
+    <div className="min-h-screen bg-[#090c14] text-slate-100 flex flex-col justify-between max-w-md mx-auto relative select-none">
       <Toaster position="top-center" richColors theme="dark" />
+
+      {/* Initial Setup Onboarding Modal if not configured */}
+      {showOnboarding && (
+        <OnboardingModal
+          initialProfile={profile}
+          onComplete={handleOnboardingComplete}
+        />
+      )}
 
       {/* Header Bar */}
       <Header
@@ -185,13 +214,11 @@ export const App: React.FC = () => {
 
       {/* Main Terminal Workspace */}
       <main className="flex-1 p-3.5 space-y-3 overflow-y-auto">
-        {/* Big Total Display Card */}
-        <div className="bg-gradient-to-br from-[#121524] via-[#101320] to-[#0c0e17] border border-slate-800 rounded-3xl p-4 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
+        {/* Total Display Card */}
+        <div className="bg-[#101420] border border-slate-800 rounded-3xl p-4 shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <span>💵</span> Total a Cobrar
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Total a Cobrar
             </span>
             {grandTotal > 0 && (
               <button
@@ -202,7 +229,7 @@ export const App: React.FC = () => {
                 }}
                 className="text-[11px] font-bold text-red-400 hover:text-red-300 flex items-center gap-1 active:scale-95 transition"
               >
-                <Trash2 className="w-3 h-3" /> Limpiar cuenta
+                <Trash2 className="w-3 h-3" /> Limpiar
               </button>
             )}
           </div>
@@ -219,10 +246,10 @@ export const App: React.FC = () => {
 
             {/* Methods Badges */}
             <div className="flex items-center gap-1 shrink-0">
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                <QrCode className="w-3 h-3" /> QR
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                <QrCode className="w-3 h-3" /> SPEI QR
               </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold">
                 <Wifi className="w-3 h-3 rotate-90" /> NFC
               </span>
             </div>
@@ -234,7 +261,7 @@ export const App: React.FC = () => {
               {cartItems.map((item) => (
                 <span
                   key={item.product.id}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] font-bold text-slate-200 shrink-0"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 shrink-0"
                 >
                   <span>{item.product.emoji}</span>
                   <span>
@@ -246,8 +273,8 @@ export const App: React.FC = () => {
                 </span>
               ))}
               {manualAmount > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[11px] font-bold text-amber-300 shrink-0">
-                  <span>⌨️</span> Extra: +${manualAmount.toFixed(2)}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[11px] font-bold text-amber-300 shrink-0">
+                  <span>⌨️</span> +${manualAmount.toFixed(2)}
                 </span>
               )}
             </div>
@@ -274,33 +301,33 @@ export const App: React.FC = () => {
       </main>
 
       {/* Bottom Floating Charge Button */}
-      <footer className="p-3.5 bg-[#0d0f18]/95 backdrop-blur-md border-t border-slate-800/80 sticky bottom-0 z-20 space-y-1.5">
+      <footer className="p-3.5 bg-[#0b0e16]/95 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-20 space-y-1.5">
         <button
           type="button"
           disabled={grandTotal <= 0}
           onClick={handleStartCharge}
-          className={`w-full py-4 px-6 rounded-2xl font-black text-lg sm:text-xl flex items-center justify-center gap-3 transition-all duration-150 shadow-xl ${
+          className={`w-full py-4 px-6 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-150 shadow-lg ${
             grandTotal > 0
-              ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-slate-950 shadow-emerald-500/25 active:scale-[0.98]'
+              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.98]'
               : 'bg-slate-800 text-slate-500 border border-slate-700/60 opacity-60 cursor-not-allowed'
           }`}
         >
-          <Sparkles className="w-6 h-6 fill-slate-950" />
+          <Sparkles className="w-5 h-5 fill-slate-950" />
           <span>COBRAR ${grandTotal.toFixed(2)}</span>
-          <ArrowRight className="w-6 h-6 stroke-[3]" />
+          <ArrowRight className="w-5 h-5 stroke-[3]" />
         </button>
 
         <div className="flex items-center justify-between text-[10px] text-slate-500 px-1">
           <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            SPEI 0% y Tarjetas Contactless
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Sin intermediarios ni retención de dinero
           </span>
           <button
             type="button"
             onClick={() => setShowSoundboxGuide(true)}
             className="text-slate-400 hover:text-emerald-400 flex items-center gap-0.5"
           >
-            <HelpCircle className="w-3 h-3" /> ¿Cómo funciona?
+            <HelpCircle className="w-3 h-3" /> Guía de cobro
           </button>
         </div>
       </footer>
@@ -320,6 +347,10 @@ export const App: React.FC = () => {
         <SettingsModal
           profile={profile}
           onSaveProfile={handleSaveProfile}
+          onResetOnboarding={() => {
+            setShowSettings(false);
+            setShowOnboarding(true);
+          }}
           onClose={() => setShowSettings(false)}
         />
       )}
@@ -334,6 +365,7 @@ export const App: React.FC = () => {
       {showProductManager && (
         <ProductManagerModal
           products={products}
+          category={profile.businessCategory}
           onSaveProducts={handleSaveProducts}
           onClose={() => setShowProductManager(false)}
         />

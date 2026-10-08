@@ -1,6 +1,6 @@
 import React from 'react';
 import { QuickProduct } from '../types';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, SlidersHorizontal } from 'lucide-react';
 import { triggerHaptic } from '../lib/soundbox';
 
 interface QuickButtonsGridProps {
@@ -18,20 +18,39 @@ export const QuickButtonsGrid: React.FC<QuickButtonsGridProps> = ({
   onRemoveItem,
   onOpenProductManager,
 }) => {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-          <span>⚡</span> Botonera Rápida
-        </h2>
+  if (products.length === 0) {
+    return (
+      <div className="p-3 rounded-2xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
+        <span className="text-xs text-slate-400">Modo Cobro Directo con Teclado</span>
         <button
+          type="button"
           onClick={() => {
             triggerHaptic();
             onOpenProductManager();
           }}
-          className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 active:scale-95 transition"
+          className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 active:scale-95 transition"
         >
-          <Plus className="w-3 h-3" /> Personalizar Botones
+          <Plus className="w-3.5 h-3.5" /> Agregar Botones Rápidos
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <span>⚡</span> Botonera Rápida
+        </h2>
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic();
+            onOpenProductManager();
+          }}
+          className="text-[11px] text-slate-400 hover:text-emerald-400 font-semibold flex items-center gap-1 active:scale-95 transition"
+        >
+          <SlidersHorizontal className="w-3 h-3" /> Editar Catálogo
         </button>
       </div>
 
@@ -45,8 +64,8 @@ export const QuickButtonsGrid: React.FC<QuickButtonsGridProps> = ({
               key={p.id}
               className={`relative rounded-2xl p-3 border transition-all duration-150 flex flex-col justify-between select-none ${
                 isSelected
-                  ? 'bg-gradient-to-b from-emerald-950/40 to-slate-900 border-emerald-500/60 shadow-lg shadow-emerald-950/40 ring-1 ring-emerald-500/30'
-                  : 'bg-[#121522] hover:bg-[#181c2e] border-slate-800/90 active:scale-[0.98]'
+                  ? 'bg-emerald-950/20 border-emerald-500/50 ring-1 ring-emerald-500/30'
+                  : 'bg-[#111622] hover:bg-[#161c2b] border-slate-800/80 active:scale-[0.98]'
               }`}
             >
               {/* Tap anywhere on top to Add */}
@@ -59,25 +78,25 @@ export const QuickButtonsGrid: React.FC<QuickButtonsGridProps> = ({
                 className="w-full text-left focus:outline-none"
               >
                 <div className="flex items-start justify-between gap-1 mb-1.5">
-                  <span className="text-2xl filter drop-shadow">{p.emoji}</span>
+                  <span className="text-2xl">{p.emoji}</span>
                   <span
-                    className={`font-mono text-xs font-black px-2 py-0.5 rounded-lg border ${
+                    className={`font-mono text-xs font-bold px-2 py-0.5 rounded-lg border ${
                       isSelected
-                        ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                        : 'bg-slate-800/80 text-emerald-400 border-slate-700'
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                        : 'bg-slate-800 text-emerald-400 border-slate-700'
                     }`}
                   >
                     ${p.price}
                   </span>
                 </div>
 
-                <div className="text-xs font-bold text-white truncate leading-tight mb-1">
+                <div className="text-xs font-bold text-slate-200 truncate leading-tight mb-1">
                   {p.name}
                 </div>
               </button>
 
               {/* Quantity Controller */}
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 mt-1">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 mt-1">
                 {count > 0 ? (
                   <>
                     <button
@@ -93,7 +112,7 @@ export const QuickButtonsGrid: React.FC<QuickButtonsGridProps> = ({
                       <Minus className="w-3 h-3" />
                     </button>
                     <span className="text-xs font-extrabold font-mono text-emerald-300">
-                      x{count} <span className="text-[10px] text-slate-400 font-normal">(${count * p.price})</span>
+                      x{count}
                     </span>
                     <button
                       type="button"
@@ -115,9 +134,9 @@ export const QuickButtonsGrid: React.FC<QuickButtonsGridProps> = ({
                       triggerHaptic();
                       onAddItem(p);
                     }}
-                    className="w-full py-0.5 text-[10px] font-bold text-slate-400 hover:text-emerald-400 flex items-center justify-center gap-1 active:scale-95 transition"
+                    className="w-full text-center text-[11px] font-bold text-slate-400 hover:text-emerald-400 py-0.5"
                   >
-                    <Plus className="w-3 h-3" /> Agregar
+                    + Agregar
                   </button>
                 )}
               </div>

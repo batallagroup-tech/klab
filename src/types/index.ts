@@ -1,4 +1,11 @@
-export type ColorTheme = 'emerald' | 'amber' | 'cyan' | 'violet' | 'rose' | 'cyber';
+export type BusinessCategory =
+  | 'abarrotes'
+  | 'comida'
+  | 'belleza'
+  | 'ropa'
+  | 'servicios'
+  | 'tecnologia'
+  | 'general';
 
 export type PaymentMethod = 'spei_qr' | 'nfc_card' | 'cash';
 
@@ -12,23 +19,22 @@ export interface MexicanBank {
 }
 
 export interface MerchantProfile {
-  name: string; // Nombre del titular o vendedor
-  stallName: string; // Nombre comercial del puesto (ej: "Tortas y Tacos El Inge")
-  tagline: string; // Slogan o ubicación (ej: "Facultad de Ingeniería • Local 4")
-  logoUrl?: string; // Logo o foto del puesto
-  clabe: string; // 18 dígitos
-  bankCode: string; // 3 dígitos (ej: 012 para BBVA)
+  name: string; // Nombre del titular de la cuenta
+  stallName: string; // Nombre comercial del negocio
+  businessCategory: BusinessCategory; // Giro del negocio
+  tagline: string; // Ubicación o descripción corta
+  logoUrl?: string; // Logo o foto del negocio
+  clabe: string; // 18 dígitos reales
+  bankCode: string; // 3 dígitos del banco
   bankName: string; // Nombre del banco
-  phoneDimo?: string; // Teléfono para Dimo
-  colorTheme: ColorTheme;
-  enableVoice: boolean; // Bocina virtual activada
+  phoneDimo?: string; // Teléfono para transferencias Dimo / SPEI
+  enableVoice: boolean; // Bocina virtual (anuncio de pago por voz)
   voiceRate: number;
   voicePitch: number;
   enableHaptics: boolean;
-  enableNfcTap: boolean; // Cobro con tarjeta NFC habilitado
+  enableNfcTap: boolean;
   alwaysOnDisplay: boolean;
-  soundAlert: boolean;
-  conceptPrefix: string;
+  isConfigured: boolean; // Ha completado el setup inicial
 }
 
 export interface QuickProduct {
@@ -36,7 +42,6 @@ export interface QuickProduct {
   name: string;
   price: number;
   emoji: string;
-  color: string;
   category: string;
 }
 

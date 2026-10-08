@@ -8,21 +8,27 @@ export interface QRPayloadOptions {
 }
 
 /**
- * Genera el payload óptimo para escaneo bancario y lectores de cámara estándar (Google Lens, iPhone Camera, etc.)
+ * Genera el payload estándar para escaneo en apps bancarias mexicanas (Banxico CoDi / SPEI)
+ * y lectores inteligentes de cámara (Google Lens, iOS Camera).
+ * Se mantiene estable y determinista sin números aleatorios que cambien el QR.
  */
 export function buildQRPayload({ amount, profile, concept }: QRPayloadOptions): string {
-  const cleanClabe = profile.clabe.replace(/\s+/g, '');
-  const cleanConcept = concept || `${profile.conceptPrefix}${Math.floor(1000 + Math.random() * 9000)}`;
+  const cleanClabe = profile.clabe.replace(/\D/g, '');
+  const cleanBeneficiary = profile.name || profile.stallName || 'COMERCIO';
+  const cleanConcept = concept || (amount > 0 ? `PAGO-${profile.stallName.replace(/\s+/g, '').slice(0, 10).toUpperCase()}` : 'PAGO');
 
-  // Formato CoDi / SPEI de alta compatibilidad:
-  // Estructura legible con datos bancarios directos que cualquier app bancaria o cámara inteligente parsea al instante
-  return `SPEI://CLABE:${cleanClabe}?banco=${encodeURIComponent(profile.bankName)}&monto=${amount.toFixed(2)}&concepto=${encodeURIComponent(cleanConcept)}&beneficiario=${encodeURIComponent(profile.stallName)}`;
+  if (amount > 0) {
+    return `SPEI://CLABE:${cleanClabe}?banco=${encodeURIComponent(profile.bankName)}&monto=${amount.toFixed(2)}&concepto=${encodeURIComponent(cleanConcept)}&beneficiario=${encodeURIComponent(cleanBeneficiary)}`;
+  }
+
+  // QR Estático de la cuenta (para mostrador o transferencias libres)
+  return `SPEI://CLABE:${cleanClabe}?banco=${encodeURIComponent(profile.bankName)}&beneficiario=${encodeURIComponent(cleanBeneficiary)}`;
 }
 
 /**
- * Genera Data URL del código QR en alta definición con diseño de alto contraste
+ * Genera Data URL del código QR en alta definición con diseño limpio y nítido.
  */
-export async function generateQRDataURL(text: string, size = 400): Promise<string> {
+export async function generateQRDataURL(text: string, size = 420): Promise<string> {
   try {
     return await QRCode.toDataURL(text, {
       width: size,

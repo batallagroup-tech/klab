@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { QuickProduct } from '../types';
-import { X, Plus, Trash2, Edit2, Check, Sparkles } from 'lucide-react';
+import { QuickProduct, BusinessCategory } from '../types';
+import { X, Plus, Trash2, Edit2, Check, Sparkles, RotateCcw } from 'lucide-react';
+import { CATEGORY_TEMPLATES } from '../lib/storage';
 import { triggerHaptic } from '../lib/soundbox';
 
 interface ProductManagerModalProps {
   products: QuickProduct[];
+  category?: BusinessCategory;
   onSaveProducts: (products: QuickProduct[]) => void;
   onClose: () => void;
 }
 
 export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
   products,
+  category = 'comida',
   onSaveProducts,
   onClose,
 }) => {
@@ -18,13 +21,13 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
   const [newPrice, setNewPrice] = useState<string>('');
-  const [newEmoji, setNewEmoji] = useState<string>('🌮');
+  const [newEmoji, setNewEmoji] = useState<string>('🏷️');
 
-  const popularEmojis = ['🌮', '🥪', '🧀', '🥤', '🧃', '☕', '🍱', '🍮', '🍔', '🍕', '🌭', '🥗', '🍦', '🍩', '🍺', '⚡'];
+  const popularEmojis = ['🏷️', '🥪', '🌮', '🧀', '🥤', '🧃', '☕', '🍲', '💈', '✂️', '💅', '👕', '👖', '👟', '🔧', '⚙️', '📱', '🔌', '📦', '⭐'];
 
   const handleAddOrUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newPrice) return;
+    if (!newName.trim() || !newPrice) return;
     triggerHaptic();
 
     const priceNum = parseFloat(newPrice);
@@ -34,7 +37,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
       setItems((prev) =>
         prev.map((p) =>
           p.id === editingId
-            ? { ...p, name: newName, price: priceNum, emoji: newEmoji }
+            ? { ...p, name: newName.trim(), price: priceNum, emoji: newEmoji }
             : p
         )
       );
@@ -42,11 +45,10 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
     } else {
       const newItem: QuickProduct = {
         id: `p_${Date.now()}`,
-        name: newName,
+        name: newName.trim(),
         price: priceNum,
         emoji: newEmoji,
-        color: '#10B981',
-        category: 'Comida',
+        category: 'General',
       };
       setItems((prev) => [...prev, newItem]);
     }
@@ -73,6 +75,12 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
     }
   };
 
+  const handleLoadCategoryPresets = () => {
+    triggerHaptic();
+    const tmpl = CATEGORY_TEMPLATES[category]?.products || [];
+    setItems(tmpl);
+  };
+
   const handleSaveAll = () => {
     triggerHaptic();
     onSaveProducts(items);
@@ -80,14 +88,15 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-lg mx-auto bg-[#0f121d] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200 select-none">
+      <div className="w-full max-w-lg mx-auto bg-[#0d111a] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-slate-800/80 flex items-center justify-between bg-[#131726]">
+        <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-[#111624]">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <span>⚡</span> Personalizar Botonera de Productos
+            <span>⚡</span> Catálogo de Botones Rápidos
           </h3>
           <button
+            type="button"
             onClick={() => {
               triggerHaptic();
               onClose();
@@ -101,119 +110,143 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
         {/* Content */}
         <div className="p-5 overflow-y-auto space-y-4">
           {/* Add / Edit Form */}
-          <form
-            onSubmit={handleAddOrUpdate}
-            className="bg-[#141829] border border-slate-800 rounded-2xl p-3.5 space-y-3"
-          >
-            <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{editingId ? 'Editar Botón' : 'Crear Nuevo Botón'}</span>
-            </div>
+          <form onSubmit={handleAddOrUpdate} className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">
+              {editingId ? 'Editar Botón' : 'Agregar Nuevo Botón'}
+            </span>
 
-            {/* Emoji Selector */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              {popularEmojis.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic();
-                    setNewEmoji(emoji);
-                  }}
-                  className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center shrink-0 border transition active:scale-90 ${
-                    newEmoji === emoji
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-sm'
-                      : 'bg-slate-800/80 border-slate-700 text-slate-300'
-                  }`}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="col-span-1">
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Emoji</label>
+                <select
+                  value={newEmoji}
+                  onChange={(e) => setNewEmoji(e.target.value)}
+                  className="w-full px-2 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-base focus:outline-none"
                 >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+                  {popularEmojis.map((em) => (
+                    <option key={em} value={em}>
+                      {em}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2 space-y-1">
+              <div className="col-span-2">
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nombre</label>
                 <input
                   type="text"
+                  required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nombre (ej. Torta Cubana)"
-                  required
-                  className="w-full px-3 py-2 rounded-xl bg-[#0a0c14] border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                  placeholder="Ej. Torta Especial"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
                 />
               </div>
-              <div className="col-span-1 space-y-1">
+
+              <div className="col-span-1">
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Precio $</label>
                 <input
                   type="number"
-                  step="0.5"
+                  step="any"
+                  required
                   value={newPrice}
                   onChange={(e) => setNewPrice(e.target.value)}
-                  placeholder="Precio $"
-                  required
-                  className="w-full px-3 py-2 rounded-xl bg-[#0a0c14] border border-slate-700 font-mono text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                  placeholder="45"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
-            >
-              {editingId ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-              <span>{editingId ? 'Actualizar Botón' : 'Agregar a la Botonera'}</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition"
+              >
+                {editingId ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                <span>{editingId ? 'Actualizar Botón' : 'Agregar a la Botonera'}</span>
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setNewName('');
+                    setNewPrice('');
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
           </form>
 
-          {/* Current Products List */}
+          {/* List of current products */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Botones Activos ({items.length})
-            </h4>
-            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-              {items.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#131726] border border-slate-800"
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase text-slate-400">
+                Botones Configurados ({items.length})
+              </span>
+              {category !== 'general' && (
+                <button
+                  type="button"
+                  onClick={handleLoadCategoryPresets}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">{p.emoji}</span>
-                    <div>
-                      <div className="text-xs font-bold text-white">{p.name}</div>
-                      <div className="text-xs font-mono font-bold text-emerald-400">${p.price}</div>
+                  <RotateCcw className="w-3 h-3" /> Cargar sugeridos de {CATEGORY_TEMPLATES[category].label}
+                </button>
+              )}
+            </div>
+
+            {items.length === 0 ? (
+              <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-500">
+                No hay botones configurados. Puedes agregar los tuyos arriba.
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">{item.emoji}</span>
+                      <div>
+                        <div className="text-xs font-bold text-white">{item.name}</div>
+                        <div className="text-[11px] font-mono font-bold text-emerald-400">
+                          ${item.price.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(item)}
+                        className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center active:scale-95"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center active:scale-95"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(p)}
-                      className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center active:scale-90 transition"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(p.id)}
-                      className="w-7 h-7 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 flex items-center justify-center active:scale-90 transition"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#131726] border-t border-slate-800 flex justify-end">
           <button
             type="button"
             onClick={handleSaveAll}
-            className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg shadow-emerald-500/20"
+            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm active:scale-95 transition"
           >
-            <Check className="w-4 h-4" />
-            <span>Guardar Botonera</span>
+            Guardar y Volver a la Terminal
           </button>
         </div>
       </div>
