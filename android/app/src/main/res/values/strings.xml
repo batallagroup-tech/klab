@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Klab</string>
+    <string name="title_activity_main">Klab</string>
+    <string name="package_name">com.batallagroup.klab</string>
+    <string name="custom_url_scheme">com.batallagroup.klab</string>
+</resources>

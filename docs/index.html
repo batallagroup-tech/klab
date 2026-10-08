@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klab — Política de Privacidad y Términos de Servicio | Batalla Group</title>
+  <meta name="description" content="Klab es la terminal punto de venta y cobro digital sin comisiones para pequeños comercios y vendedores de México. Política de privacidad, seguridad de datos y términos de servicio.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --bg-card: #0d111c;
+      --bg-card-hover: #131826;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(16, 185, 129, 0.25);
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --teal: #14b8a6;
+      --cyan: #06b6d4;
+      --accent-grad: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* BACKGROUND GLOWS */
+    .glow-top {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* HEADER / HERO */
+    header {
+      position: relative;
+      padding: 56px 24px 44px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, transparent 100%);
+      z-index: 1;
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--border-accent);
+      color: var(--primary-light);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+    .brand-pill .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    .logo-container {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 20px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #09131d 0%, #0d232a 100%);
+      border: 2px solid rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 16px 40px rgba(16, 185, 129, 0.2);
+    }
+
+    .logo-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    header p.subtitle {
+      max-width: 620px;
+      margin: 0 auto;
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* APP SUMMARY BAR */
+    .app-meta {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .meta-tag {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .meta-tag strong { color: #fff; }
+
+    /* NAVIGATION TABS */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(7, 9, 14, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      padding: 0 16px;
+      overflow-x: auto;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 16px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .nav-btn:hover { color: #fff; }
+    .nav-btn.active {
+      color: var(--primary-light);
+      border-bottom-color: var(--primary);
+    }
+
+    /* MAIN CONTENT */
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .update-banner {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid var(--border-accent);
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .update-banner strong { color: var(--primary-light); }
+
+    /* CARD STYLING */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(255, 255, 255, 0.15); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid var(--border-accent);
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .card-header h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.8;
+    }
+    .card p:last-child { margin-bottom: 0; }
+
+    .card ul {
+      padding-left: 20px;
+      margin: 12px 0;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .card ul li {
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+    .card strong { color: #fff; }
+
+    /* FEATURE HIGHLIGHT BOXES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .feature-item {
+      background: #090c14;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .feature-item h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-light);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feature-item p {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* DATA SAFETY TABLE */
+    .table-container {
+      overflow-x: auto;
+      margin: 16px 0;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: #111624;
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:last-child td { border-bottom: none; }
+    td strong { color: #fff; }
+    .badge-no {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--primary-light);
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* CONTACT / SUPPORT CALLOUT */
+    .contact-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: 24px;
+      padding: 36px 28px;
+      text-align: center;
+      margin-top: 36px;
+    }
+    .contact-card h3 {
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .contact-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 24px;
+    }
+    .contact-buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn-contact {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-grad);
+      color: #051310;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-contact:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow: none;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    footer a { color: var(--primary-light); text-decoration: none; }
+    footer strong { color: var(--text); }
+
+    @media (max-width: 640px) {
+      header { padding: 40px 16px 32px; }
+      .card { padding: 20px; }
+      .nav-btn { padding: 14px 14px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-top"></div>
+
+  <!-- HEADER / HERO -->
+  <header>
+    <div class="brand-pill">
+      <span class="dot"></span>
+      <span>Oficial · Batalla Group</span>
+    </div>
+
+    <div class="logo-container">
+      <span class="logo-text">K</span>
+    </div>
+
+    <h1>Klab</h1>
+    <p class="subtitle">Terminal Punto de Venta y Cobro Digital 0% Comisiones para el Comercio Mexicano</p>
+
+    <div class="app-meta">
+      <div class="meta-tag">📦 ID de Paquete: <strong>com.batallagroup.klab</strong></div>
+      <div class="meta-tag">🛡️ Desarrollador: <strong>Batalla Group</strong></div>
+      <div class="meta-tag">⚡ 100% Offline & Privado</div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('privacidad', this)">🔒 Privacidad</button>
+    <button class="nav-btn" onclick="switchTab('seguridad', this)">🛡️ Seguridad de Datos</button>
+    <button class="nav-btn" onclick="switchTab('terminos', this)">📋 Términos de Uso</button>
+    <button class="nav-btn" onclick="switchTab('contacto', this)">📧 Soporte & Contacto</button>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main>
+
+    <!-- TAB 1: POLÍTICA DE PRIVACIDAD -->
+    <section id="privacidad" class="tab-pane active">
+      <div class="update-banner">
+        <span><strong>Última actualización:</strong> Octubre 2026</span>
+        <span>Vigente para México y Google Play Store</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🏛️</div>
+          <h2>1. Identidad y Compromiso del Responsable</h2>
+        </div>
+        <p>
+          La aplicación móvil <strong>Klab</strong> (en adelante "la Aplicación"), identificada con el paquete <code>com.batallagroup.klab</code>, es desarrollada, mantenida y operada por <strong>Batalla Group</strong> (contacto oficial: <a href="mailto:batallagroup@gmail.com" style="color: var(--primary-light);">batallagroup@gmail.com</a>), con sede en Juan Galindo, Necaxa, Puebla, México.
+        </p>
+        <p>
+          En Batalla Group creemos firmemente que los pequeños comerciantes, puesteros de comida y emprendedores mexicanos tienen derecho a la máxima privacidad y control total sobre su negocio. <strong>Klab fue diseñada bajo una arquitectura 100% local y soberana</strong>, lo que significa que la información de sus productos, ventas, precios y cuenta CLABE nunca se envía a servidores centrales ni se comparte con terceros.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🔒</div>
+          <h2>2. Arquitectura Local y Datos Recopilados</h2>
+        </div>
+        <p>
+          Klab <strong>NO</strong> requiere registro de cuenta, <strong>NO</strong> solicita contraseña ni correo electrónico para operar y <strong>NO</strong> almacena información bancaria en servidores externos. Toda la configuración vive exclusivamente en la memoria interna de su propio teléfono:
+        </p>
+        <ul>
+          <li><strong>Datos del Perfil del Comercio:</strong> Nombre de su puesto o negocio, eslogan, CLABE Interbancaria de 18 dígitos y nombre del banco receptor. Estos datos se utilizan únicamente en su dispositivo para componer el código QR de cobro SPEI y para encabezar los tickets digitales.</li>
+          <li><strong>Catálogo Rápido de Productos:</strong> Nombres, emojis y precios de sus artículos para agilizar el cobro en mostrador.</li>
+          <li><strong>Historial de Cobros y Ventas Diarias:</strong> Registro cronológico de cobros completados (monto, hora, método SPEI/NFC/Efectivo) para generar su corte de caja diario.</li>
+          <li><strong>Ajustes de Sonido y Voz:</strong> Preferencias de la bocina inteligente virtual (volumen, tono y activación de anuncios por voz).</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚡</div>
+          <h2>3. Procesamiento de Pagos: SPEI QR y Contactless NFC</h2>
+        </div>
+        <p>
+          Klab actúa estrictamente como una herramienta de facilitación tecnológica de punto de venta entre el comerciante y su cliente:
+        </p>
+        <div class="features-grid">
+          <div class="feature-item">
+            <h3>📱 SPEI Directo (0% Comisión)</h3>
+            <p>Genera códigos QR de pago instantáneo compatibles con los estándares de Banxico. El dinero va 100% directo de la app bancaria del cliente a la cuenta del vendedor, sin intermediarios financieros ni retenciones.</p>
+          </div>
+          <div class="feature-item">
+            <h3>💳 NFC / Tap to Pay</h3>
+            <p>Utiliza la antena NFC del dispositivo para la detección rápida de tarjetas contactless físicas o billeteras digitales (Google Pay, Apple Pay), emitiendo la confirmación visual y auditiva de cobro.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🔑</div>
+          <h2>4. Permisos del Dispositivo en Android</h2>
+        </div>
+        <p>
+          Klab solicita únicamente los permisos estrictamente necesarios para su funcionamiento esencial:
+        </p>
+        <ul>
+          <li><code>android.permission.NFC</code>: Requerido para leer tarjetas bancarias y dispositivos con tecnología contactless sin contacto.</li>
+          <li><code>android.permission.VIBRATE</code>: Requerido para la retroalimentación táctil (haptic feedback) en el teclado numérico y botones de cobro.</li>
+          <li><code>android.permission.INTERNET</code>: Utilizado para la resolución de enlaces de soporte, apertura de WhatsApp para el envío de comprobantes a clientes y actualizaciones de la tienda Google Play.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🗑️</div>
+          <h2>5. Retención y Eliminación de Datos</h2>
+        </div>
+        <p>
+          Dado que los datos residen exclusivamente de forma local en el almacenamiento de su teléfono, el usuario tiene el control absoluto:
+        </p>
+        <ul>
+          <li>Puede restablecer o modificar su cuenta CLABE y catálogo en cualquier momento desde la pantalla de <em>Ajustes</em>.</li>
+          <li>Al desinstalar la aplicación o limpiar los datos de la app desde los Ajustes del Sistema Android, toda la información guardada se borra de forma permanente e irrecuperable.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- TAB 2: DECLARACIÓN DE SEGURIDAD DE DATOS (GOOGLE PLAY COMPLIANCE) -->
+    <section id="seguridad" class="tab-pane">
+      <div class="update-banner">
+        <span><strong>Google Play Data Safety</strong> — Declaración Oficial</span>
+        <span>Cumple con las directivas de privacidad de Google Play Vitals</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">✅</div>
+          <h2>Resumen de Seguridad de Datos para Google Play</h2>
+        </div>
+        <p>
+          En estricto cumplimiento con la sección de <em>Seguridad de los Datos</em> (Data Safety) de Google Play Console, declaramos que <strong>Klab no recopila ni comparte datos personales con ningún tercero</strong>.
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Categoría de Datos</th>
+                <th>¿Se recopila?</th>
+                <th>¿Se comparte?</th>
+                <th>Finalidad / Tratamiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Información Personal</strong><br>(Nombre, correo, teléfono)</td>
+                <td><span class="badge-no">NO</span></td>
+                <td><span class="badge-no">NO</span></td>
+                <td>No se requiere cuenta ni login para utilizar la app.</td>
+              </tr>
+              <tr>
+                <td><strong>Información Financiera</strong><br>(Tarjetas, CLABE)</td>
+                <td><span class="badge-no">Solo Local</span></td>
+                <td><span class="badge-no">NO</span></td>
+                <td>La CLABE se guarda solo en el teléfono para generar el código QR. Nunca se envía a la nube.</td>
+              </tr>
+              <tr>
+                <td><strong>Ubicación</strong></td>
+                <td><span class="badge-no">NO</span></td>
+                <td><span class="badge-no">NO</span></td>
+                <td>No solicita permisos de GPS ni rastreo geográfico.</td>
+              </tr>
+              <tr>
+                <td><strong>Fotos y Archivos</strong></td>
+                <td><span class="badge-no">Solo Local</span></td>
+                <td><span class="badge-no">NO</span></td>
+                <td>Si el usuario elige un logo para su cartel, se procesa en el dispositivo.</td>
+              </tr>
+              <tr>
+                <td><strong>Identificadores de Dispositivo</strong></td>
+                <td><span class="badge-no">NO</span></td>
+                <td><span class="badge-no">NO</span></td>
+                <td>Cero rastreo o analítica invasiva.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🛡️</div>
+          <h2>Cifrado y Protección en Tránsito</h2>
+        </div>
+        <p>
+          Dado que Klab funciona como una terminal de cobro offline y local, no existe transmisión de datos sensibles a servidores remotos. Toda comunicación externa (como el envío de tickets por WhatsApp) se ejecuta mediante los protocolos estándar cifrados de extremo a extremo de las respectivas aplicaciones del sistema.
+        </p>
+      </div>
+    </section>
+
+    <!-- TAB 3: TÉRMINOS Y CONDICIONES DE USO -->
+    <section id="terminos" class="tab-pane">
+      <div class="update-banner">
+        <span><strong>Términos de Servicio</strong> — Klab Terminal POS</span>
+        <span>Versión 1.0.0</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📝</div>
+          <h2>1. Aceptación de los Términos</h2>
+        </div>
+        <p>
+          Al descargar, instalar o utilizar la aplicación móvil Klab, usted acepta regirse por los presentes Términos de Servicio. Si no está de acuerdo con alguna disposición, le recomendamos no utilizar la aplicación.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🏪</div>
+          <h2>2. Naturaleza del Servicio</h2>
+        </div>
+        <p>
+          Klab es una herramienta de punto de venta (POS) y terminal auxiliar para facilitar el cálculo de cuentas, la generación de códigos QR para transferencias SPEI directas y la emisión de comprobantes digitales de compra.
+        </p>
+        <ul>
+          <li><strong>0% de Comisión:</strong> Klab no cobra comisiones porcentuales ni tarifas por transacción sobre los pagos que reciba mediante transferencia bancaria o en efectivo.</li>
+          <li><strong>Responsabilidad de la CLABE:</strong> El comerciante es el único responsable de ingresar correctamente su número de CLABE Interbancaria de 18 dígitos. Klab incluye un validador matemático oficial de Banxico para prevenir errores de captura, pero no se responsabiliza por fondos transferidos a cuentas incorrectas provistas por el usuario.</li>
+          <li><strong>Verificación de Transferencias:</strong> El comerciante debe verificar en su aplicación bancaria oficial la recepción efectiva de los fondos antes de entregar la mercancía.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚖️</div>
+          <h2>3. Propiedad Intelectual y Marca</h2>
+        </div>
+        <p>
+          El software Klab, su diseño visual, logotipo, código fuente, algoritmos de cálculo y sintetizador de voz son propiedad exclusiva de <strong>Batalla Group</strong>. Queda prohibida la descompilación, modificación no autorizada o redistribución con fines fraudulentos.
+        </p>
+      </div>
+    </section>
+
+    <!-- TAB 4: SOPORTE Y CONTACTO -->
+    <section id="contacto" class="tab-pane">
+      <div class="contact-card">
+        <h3>¿Tienes dudas o necesitas asistencia?</h3>
+        <p>
+          El equipo de ingeniería y soporte de Batalla Group está a tu disposición para ayudarte a configurar tu terminal Klab o resolver cualquier inquietud sobre tus cobros.
+        </p>
+
+        <div class="contact-buttons">
+          <a href="mailto:batallagroup@gmail.com" class="btn-contact">
+            <span>✉️ batallagroup@gmail.com</span>
+          </a>
+          <a href="https://wa.me/527641311374" target="_blank" class="btn-contact btn-secondary">
+            <span>💬 WhatsApp Soporte (+52 764 131 1374)</span>
+          </a>
+          <a href="https://batallagroup.com" target="_blank" class="btn-contact btn-secondary">
+            <span>🌐 batallagroup.com</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>© 2026 <strong>Batalla Group</strong>. Todos los derechos reservados.</p>
+    <p style="margin-top: 6px;">Klab · Terminal Punto de Venta y Cobro Digital sin Comisiones · Hecho en México 🇲🇽</p>
+  </footer>
+
+  <script>
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById(tabId);
+      if (target) {
+        target.classList.add('active');
+        btn.classList.add('active');
+      }
+    }
+
+    // Auto switch if hash is in url (e.g. #privacidad, #terminos)
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        const btn = document.querySelector(`button[onclick*="'${hash}'"]`);
+        if (btn) btn.click();
+      }
+    });
+  </script>
+</body>
+</html>
