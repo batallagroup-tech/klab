@@ -1,6 +1,12 @@
 import { MerchantProfile, QuickProduct, SaleRecord } from '../types';
 import { loadProfile, loadProducts, loadSales, saveProfile, saveProducts } from './storage';
-import { Share } from '@capacitor/share';
+import {
+  getGoogleAccountInfo,
+  signInWithGoogleDrive,
+  signOutGoogleDrive,
+  uploadToGoogleDrive,
+  downloadFromGoogleDrive,
+} from './googleDrive';
 
 export type BackupFrequency = 'daily' | 'weekly' | 'monthly' | 'manual' | 'never';
 
@@ -13,6 +19,7 @@ export interface BackupMetadata {
   salesCount: number;
   totalSalesAmount: number;
   googleAccount?: string;
+  driveFileId?: string;
   frequency: BackupFrequency;
   lastAutoBackup?: number;
 }
@@ -84,7 +91,7 @@ export function generateBackupPayload(): KlabBackupPayload {
 
   return {
     app: 'klab',
-    version: '1.0.2',
+    version: '1.0.3',
     createdAt: Date.now(),
     profile,
     products,
@@ -92,7 +99,7 @@ export function generateBackupPayload(): KlabBackupPayload {
   };
 }
 
-export async function createBackupNow(googleEmail?: string): Promise<BackupMetadata> {
+export async function createBackupNow(forceGoogleUpload = true): Promise<BackupMetadata> {
   const payload = generateBackupPayload();
   const jsonStr = JSON.stringify(payload, null, 2);
   const sizeBytes = new Blob([jsonStr]).size;
@@ -107,7 +114,26 @@ export async function createBackupNow(googleEmail?: string): Promise<BackupMetad
     minute: '2-digit',
   });
 
-  const account = googleEmail || getConnectedGoogleAccount() || undefined;
+  let driveFileId: string | undefined;
+  let googleEmail = getConnectedGoogleAccount() || undefined;
+
+  // Intentar subida nativa a Google Drive en segundo plano si está logueado
+  if (forceGoogleUpload) {
+    try {
+      const gAccount = await getGoogleAccountInfo();
+      if (gAccount.signedIn && gAccount.email) {
+        googleEmail = gAccount.email;
+        setConnectedGoogleAccount(gAccount.email);
+        const driveResult = await uploadToGoogleDrive(jsonStr);
+        if (driveResult.success) {
+          driveFileId = driveResult.fileId;
+          console.log('☁️ [Klab Backup] Respaldo subido con éxito a Google Drive:', driveResult.fileId);
+        }
+      }
+    } catch (err) {
+      console.warn('Google Drive silent upload not available or skipped:', err);
+    }
+  }
 
   const metadata: BackupMetadata = {
     version: payload.version,
@@ -117,7 +143,8 @@ export async function createBackupNow(googleEmail?: string): Promise<BackupMetad
     productsCount: payload.products.length,
     salesCount: payload.sales.length,
     totalSalesAmount: totalAmount,
-    googleAccount: account,
+    googleAccount: googleEmail,
+    driveFileId,
     frequency: getBackupFrequency(),
     lastAutoBackup: now,
   };
@@ -132,6 +159,34 @@ export async function createBackupNow(googleEmail?: string): Promise<BackupMetad
   return metadata;
 }
 
+export async function restoreFromGoogleDrive(): Promise<{
+  success: boolean;
+  message: string;
+  productsCount: number;
+  salesCount: number;
+}> {
+  try {
+    const driveData = await downloadFromGoogleDrive();
+    if (!driveData.success || !driveData.jsonContent) {
+      return {
+        success: false,
+        message: 'No se pudo descargar la copia de seguridad de Google Drive.',
+        productsCount: 0,
+        salesCount: 0,
+      };
+    }
+
+    return restoreBackupFromJSON(driveData.jsonContent);
+  } catch (err) {
+    return {
+      success: false,
+      message: (err as Error).message || 'Error al conectar con Google Drive',
+      productsCount: 0,
+      salesCount: 0,
+    };
+  }
+}
+
 export async function exportBackupToFile(): Promise<void> {
   const payload = generateBackupPayload();
   const jsonStr = JSON.stringify(payload, null, 2);
@@ -140,7 +195,6 @@ export async function exportBackupToFile(): Promise<void> {
   const fileName = `klab_backup_${dateStr}.json`;
 
   try {
-    // Si soporta Share de Capacitor o Web Share con archivos
     const file = new File([blob], fileName, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
@@ -151,7 +205,7 @@ export async function exportBackupToFile(): Promise<void> {
       return;
     }
   } catch {
-    // Fallback a descarga directa en navegador
+    // Fallback
   }
 
   const url = URL.createObjectURL(blob);
@@ -234,7 +288,6 @@ export function restoreBackupFromJSON(jsonString: string): {
       };
     }
 
-    // Guardar datos restaurados
     saveProfile(data.profile);
     saveProducts(data.products);
     localStorage.setItem('klab_sales_records', JSON.stringify(data.sales));

@@ -16,6 +16,9 @@ import {
   Sparkles,
   AlertCircle,
   Clock,
+  LogIn,
+  LogOut,
+  FolderDown,
 } from 'lucide-react';
 import {
   BackupMetadata,
@@ -29,7 +32,14 @@ import {
   exportBackupToFile,
   exportAccountingCSV,
   restoreBackupFromJSON,
+  restoreFromGoogleDrive,
 } from '../lib/backup';
+import {
+  getGoogleAccountInfo,
+  signInWithGoogleDrive,
+  signOutGoogleDrive,
+  GoogleAccountInfo,
+} from '../lib/googleDrive';
 import { triggerHaptic } from '../lib/soundbox';
 import { toast } from 'sonner';
 
@@ -41,13 +51,19 @@ interface BackupModalProps {
 export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestored }) => {
   const [metadata, setMetadata] = useState<BackupMetadata | null>(getLastBackupMetadata());
   const [frequency, setFrequencyState] = useState<BackupFrequency>(getBackupFrequency());
-  const [googleEmail, setGoogleEmail] = useState<string>(getConnectedGoogleAccount() || '');
-  const [isEditingEmail, setIsEditingEmail] = useState<boolean>(false);
+  const [googleAccount, setGoogleAccount] = useState<GoogleAccountInfo>({ signedIn: false });
   const [isBackingUp, setIsBackingUp] = useState<boolean>(false);
+  const [isRestoringDrive, setIsRestoringDrive] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMetadata(getLastBackupMetadata());
+    getGoogleAccountInfo().then((acc) => {
+      setGoogleAccount(acc);
+      if (acc.signedIn && acc.email) {
+        setConnectedGoogleAccount(acc.email);
+      }
+    });
   }, []);
 
   const handleFrequencyChange = (freq: BackupFrequency) => {
@@ -57,12 +73,30 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
     toast.success('Frecuencia de copia de seguridad actualizada');
   };
 
-  const handleSaveEmail = () => {
+  const handleGoogleSignIn = async () => {
     triggerHaptic();
-    const clean = googleEmail.trim();
-    setConnectedGoogleAccount(clean || null);
-    setIsEditingEmail(false);
-    toast.success(clean ? `Cuenta vinculada: ${clean}` : 'Cuenta de Google desvinculada');
+    try {
+      const res = await signInWithGoogleDrive();
+      if (res.success && res.email) {
+        setGoogleAccount({ signedIn: true, email: res.email, displayName: res.displayName });
+        setConnectedGoogleAccount(res.email);
+        toast.success(`Sesión iniciada con: ${res.email}`, {
+          description: 'Tus copias de seguridad se sincronizarán directamente en tu Google Drive.',
+        });
+        // Realizar primera copia a Google Drive
+        handleBackupNow();
+      }
+    } catch (err) {
+      toast.error(`Error al conectar con Google: ${(err as Error).message}`);
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    triggerHaptic();
+    await signOutGoogleDrive();
+    setGoogleAccount({ signedIn: false });
+    setConnectedGoogleAccount(null);
+    toast.info('Sesión de Google cerrada');
   };
 
   const handleBackupNow = async () => {
@@ -70,15 +104,42 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
     setIsBackingUp(true);
 
     try {
-      const meta = await createBackupNow(googleEmail.trim() || undefined);
+      const meta = await createBackupNow(true);
       setMetadata(meta);
       toast.success('¡Copia de seguridad realizada con éxito!', {
-        description: `${meta.productsCount} productos y ${meta.salesCount} ventas respaldadas.`,
+        description: meta.googleAccount
+          ? `Sincronizada con Google Drive (${meta.googleAccount}).`
+          : `${meta.productsCount} productos y ${meta.salesCount} ventas respaldadas localmente.`,
       });
     } catch (err) {
       toast.error(`Error al respaldar: ${(err as Error).message}`);
     } finally {
       setIsBackingUp(false);
+    }
+  };
+
+  const handleRestoreFromDrive = async () => {
+    triggerHaptic();
+    setIsRestoringDrive(true);
+
+    try {
+      const result = await restoreFromGoogleDrive();
+      if (result.success) {
+        toast.success('¡Restauración desde Google Drive exitosa!', {
+          description: result.message,
+          duration: 4000,
+        });
+        setMetadata(getLastBackupMetadata());
+        if (onDataRestored) {
+          onDataRestored();
+        }
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err) {
+      toast.error(`Error al restaurar de Drive: ${(err as Error).message}`);
+    } finally {
+      setIsRestoringDrive(false);
     }
   };
 
@@ -138,7 +199,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
           <div className="flex items-center gap-2">
             <Cloud className="w-4 h-4 text-emerald-400" />
             <span className="text-sm font-bold text-white">
-              Copia de Seguridad & Historial en la Nube
+              Copia de Seguridad & Google Drive
             </span>
           </div>
 
@@ -173,7 +234,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
                   {metadata ? `${(metadata.sizeBytes / 1024).toFixed(1)} KB` : '0 KB'}
                 </span>
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 inline-block mt-0.5">
-                  {metadata?.googleAccount ? 'En la Nube' : 'Almacenada Local'}
+                  {googleAccount.signedIn ? 'Google Drive' : 'Local'}
                 </span>
               </div>
             </div>
@@ -209,53 +270,65 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
               ) : (
                 <CloudUpload className="w-4 h-4" />
               )}
-              <span>{isBackingUp ? 'Creando copia...' : 'Hacer Copia de Seguridad Ahora'}</span>
+              <span>{isBackingUp ? 'Guardando en la nube...' : 'Hacer Copia de Seguridad Ahora'}</span>
             </button>
           </div>
 
-          {/* Card 2: Google Drive & Frequency Settings */}
+          {/* Card 2: Google Drive Account Connection & Frequency */}
           <div className="bg-[#131826] border border-slate-800 rounded-2xl p-4 space-y-3.5">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Ajustes de Google Drive & Nube</span>
+              <span>Ajustes de Google Drive (Nube)</span>
             </h4>
 
-            {/* Google Account Row */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-medium">Cuenta de Google para Respaldo</span>
-                {!isEditingEmail && (
+            {/* Google Sign-in Card */}
+            <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-white block">
+                    {googleAccount.signedIn ? googleAccount.displayName || 'Cuenta Conectada' : 'Cuenta de Google'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono block">
+                    {googleAccount.signedIn ? googleAccount.email : 'No vinculada'}
+                  </span>
+                </div>
+
+                {googleAccount.signedIn ? (
                   <button
                     type="button"
-                    onClick={() => setIsEditingEmail(true)}
-                    className="text-emerald-400 hover:text-emerald-300 font-bold text-[11px]"
+                    onClick={handleGoogleSignOut}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-red-400 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
                   >
-                    {googleEmail ? 'Cambiar cuenta' : '+ Vincular correo'}
+                    <LogOut className="w-3 h-3" />
+                    <span>Desconectar</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-black flex items-center gap-1.5 shadow active:scale-95 transition"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-slate-900" />
+                    <span>Conectar Google</span>
                   </button>
                 )}
               </div>
 
-              {isEditingEmail ? (
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="email"
-                    value={googleEmail}
-                    onChange={(e) => setGoogleEmail(e.target.value)}
-                    placeholder="ejemplo@gmail.com"
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  />
+              {googleAccount.signedIn && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Sincronización automática activa en Google Drive
+                  </span>
+
                   <button
                     type="button"
-                    onClick={handleSaveEmail}
-                    className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs"
+                    onClick={handleRestoreFromDrive}
+                    disabled={isRestoringDrive}
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold underline flex items-center gap-1"
                   >
-                    Guardar
+                    <FolderDown className="w-3 h-3" />
+                    <span>{isRestoringDrive ? 'Descargando...' : 'Restaurar de Drive'}</span>
                   </button>
-                </div>
-              ) : (
-                <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-300 flex items-center justify-between">
-                  <span>{googleEmail || 'No configurada (solo almacenamiento local)'}</span>
-                  {googleEmail && <Check className="w-3.5 h-3.5 text-emerald-400" />}
                 </div>
               )}
             </div>
@@ -263,7 +336,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
             {/* Frequency Selector (like WhatsApp) */}
             <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
               <label className="block text-xs text-slate-300 font-medium">
-                Guardar en la cuenta automáticamente
+                Frecuencia de copia automática
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs font-bold">
@@ -330,7 +403,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
                 className="py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
               >
                 <Upload className="w-3.5 h-3.5 text-amber-400" />
-                <span>Restaurar Copia</span>
+                <span>Restaurar Archivo</span>
               </button>
             </div>
 
@@ -349,7 +422,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, onDataRestore
         <div className="px-5 py-3 bg-[#0a0d14] border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
           <div className="flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Tus datos son 100% privados y nunca se venden a terceros</span>
+            <span>Tus datos son 100% privados y se almacenan cifrados</span>
           </div>
         </div>
       </div>
