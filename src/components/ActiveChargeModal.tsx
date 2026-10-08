@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MerchantProfile, CartItem, PaymentMethod, CardPaymentDetails } from '../types';
+import { MerchantProfile, CartItem, PaymentMethod } from '../types';
 import {
   X,
   Copy,
@@ -8,16 +8,22 @@ import {
   Volume2,
   ShieldCheck,
   QrCode,
-  CreditCard,
-  Wifi,
   Banknote,
   CheckCircle2,
   Sparkles,
+  BellRing,
+  Radio,
+  ExternalLink,
 } from 'lucide-react';
 import { buildQRPayload, generateQRDataURL } from '../lib/qr';
 import { formatCLABE, MEXICAN_BANKS } from '../lib/banks';
 import { announcePayment, triggerHaptic } from '../lib/soundbox';
-import { startNFCReader } from '../lib/nfc';
+import {
+  listenToBankPayments,
+  isNotificationAccessGranted,
+  openNotificationAccessSettings,
+  BankPaymentEvent,
+} from '../lib/bankDetector';
 import { CashCalculatorModal } from './CashCalculatorModal';
 import { Share } from '@capacitor/share';
 
@@ -30,7 +36,7 @@ interface ActiveChargeModalProps {
     amount: number,
     summary: string,
     method: PaymentMethod,
-    cardDetails?: CardPaymentDetails
+    payerOrBank?: string
   ) => void;
 }
 
@@ -41,19 +47,27 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
   onClose,
   onPaymentSuccess,
 }) => {
-  const [chargeMode, setChargeMode] = useState<'qr' | 'nfc' | 'cash'>('qr');
+  const [chargeMode, setChargeMode] = useState<'qr' | 'cash'>('qr');
   const [qrType, setQrType] = useState<'exact' | 'static'>('exact');
   const [qrUrl, setQrUrl] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [isNfcListening, setIsNfcListening] = useState<boolean>(false);
   const [showCashModal, setShowCashModal] = useState<boolean>(false);
+  const [isPermissionOk, setIsPermissionOk] = useState<boolean | null>(null);
+  const [lastDetectedAlert, setLastDetectedAlert] = useState<string | null>(null);
 
   const bank = MEXICAN_BANKS[profile.bankCode];
   const itemsSummary =
     items.length > 0
       ? items.map((i) => `${i.qty}x ${i.product.name}`).join(', ')
       : 'Venta rápida';
+
+  // Verificar estado del permiso de notificaciones bancarias
+  useEffect(() => {
+    isNotificationAccessGranted().then((granted) => {
+      setIsPermissionOk(granted);
+    });
+  }, []);
 
   // Generación determinista del código QR
   useEffect(() => {
@@ -70,24 +84,40 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
     };
   }, [amount, profile, qrType]);
 
-  // Listener NFC real para tarjetas contactless
+  // Listener nativo en tiempo real de notificaciones bancarias (BBVA, Nu, MP, STP, etc.)
   useEffect(() => {
-    if (chargeMode !== 'nfc' || isSuccess) return;
+    if (isSuccess) return;
 
     let cleanup = () => {};
-    setIsNfcListening(true);
 
-    startNFCReader((card) => {
-      handleCardReceived(card);
-    }).then((cancel) => {
-      cleanup = cancel;
+    listenToBankPayments((payment: BankPaymentEvent) => {
+      console.log('⚡ [ActiveCharge] Evento recibido en vista:', payment);
+      setLastDetectedAlert(`${payment.bank}: $${payment.amount.toFixed(2)}`);
+
+      // Si el monto coincide (o si es un cobro activo y cae depósito positivo)
+      triggerHaptic();
+      setIsSuccess(true);
+
+      if (profile.enableVoice) {
+        announcePayment(payment.amount || amount, undefined, profile.voiceRate, profile.voicePitch);
+      }
+
+      setTimeout(() => {
+        onPaymentSuccess(
+          amount,
+          itemsSummary,
+          'spei_qr',
+          `${payment.bank} (Auto)`
+        );
+      }, 1400);
+    }).then((unsub) => {
+      cleanup = unsub;
     });
 
     return () => {
-      setIsNfcListening(false);
       cleanup();
     };
-  }, [chargeMode, isSuccess]);
+  }, [amount, isSuccess, itemsSummary, onPaymentSuccess, profile]);
 
   const handleCopyCLABE = () => {
     triggerHaptic();
@@ -103,7 +133,7 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
       2
     )} MXN\n🏦 Banco: ${bank?.name || profile.bankName}\n🔢 CLABE: ${formatCLABE(
       profile.clabe
-    )}\n👤 Titular: ${profile.name || profile.stallName}\n⚡ Cobro directo SPEI`;
+    )}\n👤 Titular: ${profile.name || profile.stallName}\n⚡ Cobro directo SPEI 0% comisiones`;
 
     try {
       if (navigator.share) {
@@ -116,7 +146,7 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
     }
   };
 
-  const handleCardReceived = async (card: CardPaymentDetails) => {
+  const handleManualConfirm = async () => {
     triggerHaptic();
     setIsSuccess(true);
 
@@ -125,32 +155,27 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
     }
 
     setTimeout(() => {
-      onPaymentSuccess(amount, itemsSummary, 'nfc_card', card);
+      onPaymentSuccess(amount, itemsSummary, 'spei_qr', 'SPEI Manual');
     }, 1200);
   };
 
-  const handleConfirmPaid = async (method: PaymentMethod = 'spei_qr') => {
+  const handleEnableDetector = async () => {
     triggerHaptic();
-    setIsSuccess(true);
-
-    if (profile.enableVoice) {
-      await announcePayment(amount, undefined, profile.voiceRate, profile.voicePitch);
-    }
-
+    await openNotificationAccessSettings();
     setTimeout(() => {
-      onPaymentSuccess(amount, itemsSummary, method);
-    }, 1200);
+      isNotificationAccessGranted().then((granted) => setIsPermissionOk(granted));
+    }, 1500);
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200 select-none">
-      <div className="w-full max-w-md mx-auto bg-[#0d111a] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+      <div className="w-full max-w-md mx-auto bg-[#0d111a] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]">
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-[#111624]">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Pantalla de Cobro
+              Terminal de Cobro
             </span>
           </div>
 
@@ -182,37 +207,21 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
         </div>
 
         {/* Method Selector Tabs */}
-        <div className="grid grid-cols-3 p-2 bg-[#0c1018] gap-1 border-b border-slate-800/80">
+        <div className="grid grid-cols-2 p-2 bg-[#0c1018] gap-1.5 border-b border-slate-800/80">
           <button
             type="button"
             onClick={() => {
               triggerHaptic();
               setChargeMode('qr');
             }}
-            className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+            className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
               chargeMode === 'qr'
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 bg-slate-900/40'
             }`}
           >
             <QrCode className="w-4 h-4" />
-            <span>SPEI QR</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic();
-              setChargeMode('nfc');
-            }}
-            className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-              chargeMode === 'nfc'
-                ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Wifi className="w-4 h-4 rotate-90" />
-            <span>Tarjeta NFC</span>
+            <span>SPEI QR Bancario</span>
           </button>
 
           <button
@@ -221,10 +230,10 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
               triggerHaptic();
               setShowCashModal(true);
             }}
-            className="py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-slate-400 hover:text-slate-200 transition"
+            className="py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200 bg-slate-900/40 hover:bg-slate-800/60 transition"
           >
-            <Banknote className="w-4 h-4" />
-            <span>Efectivo</span>
+            <Banknote className="w-4 h-4 text-amber-400" />
+            <span>Efectivo & Cambio</span>
           </button>
         </div>
 
@@ -238,7 +247,7 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setQrType('exact')}
-                  className={`px-3 py-1 rounded-lg transition ${
+                  className={`px-3 py-1.5 rounded-lg transition ${
                     qrType === 'exact'
                       ? 'bg-slate-800 text-emerald-400 shadow-sm'
                       : 'text-slate-400'
@@ -249,13 +258,13 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setQrType('static')}
-                  className={`px-3 py-1 rounded-lg transition ${
+                  className={`px-3 py-1.5 rounded-lg transition ${
                     qrType === 'static'
                       ? 'bg-slate-800 text-emerald-400 shadow-sm'
                       : 'text-slate-400'
                   }`}
                 >
-                  QR Fijo del puesto
+                  QR Fijo del negocio
                 </button>
               </div>
 
@@ -266,6 +275,36 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
                 ) : (
                   <div className="text-slate-500 text-xs">Generando QR...</div>
                 )}
+              </div>
+
+              {/* Live Bank Detector Badge */}
+              <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-left flex items-start gap-2.5">
+                <Radio className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5 animate-pulse" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] font-bold text-slate-200">
+                      Detector Automático de Transferencias
+                    </span>
+                    {isPermissionOk ? (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        En vivo
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleEnableDetector}
+                        className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline flex items-center gap-0.5"
+                      >
+                        Activar acceso <ExternalLink className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {lastDetectedAlert
+                      ? `🔔 Detectado: ${lastDetectedAlert}`
+                      : `Escuchando alertas de ${bank?.name || 'tu banco'} al caer el SPEI.`}
+                  </p>
+                </div>
               </div>
 
               {/* Bank & CLABE Card */}
@@ -279,114 +318,95 @@ export const ActiveChargeModal: React.FC<ActiveChargeModalProps> = ({
                     onClick={handleShare}
                     className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 active:scale-95 transition"
                   >
-                    <Share2 className="w-3 h-3" /> Compartir
+                    <Share2 className="w-3.5 h-3.5" />
+                    Enviar datos
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-slate-500 block">CLABE</span>
-                    <span className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
-                      {formatCLABE(profile.clabe) || profile.clabe || 'Sin CLABE configurada'}
+                <div className="flex items-center justify-between bg-slate-900/80 p-2 rounded-xl border border-slate-800/80">
+                  <div className="min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                      CLABE Interbancaria
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-200 tracking-wider">
+                      {formatCLABE(profile.clabe)}
                     </span>
                   </div>
 
                   <button
                     type="button"
                     onClick={handleCopyCLABE}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${
-                      copied
-                        ? 'bg-emerald-500 text-slate-950'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                    }`}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copiada' : 'Copiar'}</span>
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Copiada</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
                 <div className="text-[10px] text-slate-400">
-                  Titular: <strong className="text-slate-200">{profile.name || profile.stallName}</strong>
+                  Titular: <span className="text-slate-200 font-medium">{profile.name || profile.stallName}</span>
                 </div>
               </div>
 
-              {/* Confirm Button */}
+              {/* Manual Confirm Button */}
               <button
                 type="button"
-                onClick={() => handleConfirmPaid('spei_qr')}
-                className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition"
+                onClick={handleManualConfirm}
+                disabled={isSuccess}
+                className={`w-full py-3.5 px-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.99] ${
+                  isSuccess
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+                }`}
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Confirmar Pago Recibido</span>
-              </button>
-            </div>
-          )}
-
-          {/* TAB 2: NFC CONTACTLESS */}
-          {chargeMode === 'nfc' && (
-            <div className="space-y-5 text-center py-4">
-              <div className="relative w-24 h-24 mx-auto rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                <Wifi className="w-12 h-12 rotate-90 animate-pulse" />
-                <div className="absolute inset-0 rounded-3xl border border-cyan-400/40 animate-ping opacity-20 pointer-events-none" />
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-white tracking-tight">
-                  Acerca la tarjeta o teléfono
-                </h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                  Acepta tarjetas de débito/crédito contactless (Visa, Mastercard, Carnet) o Apple Pay / Google Wallet acercándolas a la parte trasera del teléfono.
-                </p>
-              </div>
-
-              <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-left space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
-                  <CreditCard className="w-4 h-4" />
-                  <span>Lector NFC Activo</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Esperando contacto de tarjeta en la antena NFC de tu dispositivo...
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  handleCardReceived({
-                    brand: 'Visa',
-                    last4: '4820',
-                    authCode: 'APROB-' + Math.floor(100000 + Math.random() * 900000),
-                    holderName: 'TARJETAHABIENTE',
-                  })
-                }
-                className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-cyan-500/30 active:scale-95 transition"
-              >
-                Confirmar Cobro con Tarjeta Manualmente
+                {isSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 animate-bounce" />
+                    <span>¡Pago Confirmado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span>Confirmar Pago Recibido</span>
+                  </>
+                )}
               </button>
             </div>
           )}
         </div>
 
         {/* Footer info */}
-        <div className="px-5 py-2.5 bg-[#0b0e16] border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
-          <span className="flex items-center gap-1">
+        <div className="px-5 py-3 bg-[#0a0d14] border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+          <div className="flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Sin intermediarios ni retención de fondos
-          </span>
-          <span>Klab POS</span>
+            <span>SPEI Directo a tu banco (0% comisiones)</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+            <span>Bocina {profile.enableVoice ? 'Activada' : 'Muda'}</span>
+          </div>
         </div>
       </div>
 
-      {/* Cash Calculator Modal */}
+      {/* Cash calculator sub-modal */}
       {showCashModal && (
         <CashCalculatorModal
-          amount={amount}
-          enableVoice={profile.enableVoice}
-          onConfirmCash={() => {
-            setShowCashModal(false);
-            handleConfirmPaid('cash');
-          }}
+          totalAmount={amount}
           onClose={() => setShowCashModal(false)}
+          onConfirmPayment={() => {
+            setShowCashModal(false);
+            onPaymentSuccess(amount, itemsSummary, 'cash');
+          }}
         />
       )}
     </div>

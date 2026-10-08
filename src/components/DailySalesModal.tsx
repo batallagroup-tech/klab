@@ -68,16 +68,12 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
           </div>
 
           {/* Breakdown Badges */}
-          <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
-            <div className="py-2 px-1 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
-              <span className="text-[10px] block text-emerald-300/80 font-bold">QR / SPEI</span>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+            <div className="py-2.5 px-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
+              <span className="text-[10px] block text-emerald-300/80 font-bold">SPEI QR Directo (0% comisiones)</span>
               <strong className="font-mono text-sm">{dailyStats.speiSalesCount} ventas</strong>
             </div>
-            <div className="py-2 px-1 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-400">
-              <span className="text-[10px] block text-cyan-300/80 font-bold">Tarjeta NFC</span>
-              <strong className="font-mono text-sm">{dailyStats.nfcSalesCount} ventas</strong>
-            </div>
-            <div className="py-2 px-1 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300">
+            <div className="py-2.5 px-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-300">
               <span className="text-[10px] block text-slate-400 font-bold">Efectivo</span>
               <strong className="font-mono text-sm">{dailyStats.cashSalesCount} ventas</strong>
             </div>
@@ -117,16 +113,12 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                       <div className="flex items-center gap-2.5">
                         <div
                           className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
-                            s.method === 'nfc_card'
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                              : s.method === 'cash'
+                            s.method === 'cash'
                               ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                               : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                           }`}
                         >
-                          {s.method === 'nfc_card' ? (
-                            <CreditCard className="w-4 h-4" />
-                          ) : s.method === 'cash' ? (
+                          {s.method === 'cash' ? (
                             <Banknote className="w-4 h-4" />
                           ) : (
                             <QrCode className="w-4 h-4" />
@@ -141,10 +133,10 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                             <span>{time}</span>
                             <span>•</span>
                             <span className="capitalize font-medium">
-                              {s.method === 'nfc_card'
-                                ? `Tarjeta ${s.cardDetails?.brand || ''} (••••${s.cardDetails?.last4 || ''})`
-                                : s.method === 'cash'
+                              {s.method === 'cash'
                                 ? 'Efectivo'
+                                : s.bankName
+                                ? `SPEI (${s.bankName})`
                                 : 'SPEI QR'}
                             </span>
                           </div>

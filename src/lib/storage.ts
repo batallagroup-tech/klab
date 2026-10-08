@@ -112,7 +112,7 @@ export const DEFAULT_PROFILE: MerchantProfile = {
   voiceRate: 1.0,
   voicePitch: 1.0,
   enableHaptics: true,
-  enableNfcTap: true,
+  enableBankAutoDetection: true,
   alwaysOnDisplay: true,
   isConfigured: false,
 };
@@ -204,7 +204,6 @@ export function getDailyStats(sales: SaleRecord[]): DailyStats {
   const averageTicket = totalSales > 0 ? totalAmount / totalSales : 0;
 
   const speiSalesCount = todaySales.filter((s) => s.method === 'spei_qr').length;
-  const nfcSalesCount = todaySales.filter((s) => s.method === 'nfc_card').length;
   const cashSalesCount = todaySales.filter((s) => s.method === 'cash').length;
 
   return {
@@ -213,7 +212,6 @@ export function getDailyStats(sales: SaleRecord[]): DailyStats {
     totalSales,
     averageTicket,
     speiSalesCount,
-    nfcSalesCount,
     cashSalesCount,
   };
 }

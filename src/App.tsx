@@ -18,7 +18,6 @@ import {
   SaleRecord,
   DailyStats,
   PaymentMethod,
-  CardPaymentDetails,
 } from './types';
 import {
   loadProfile,
@@ -32,7 +31,7 @@ import {
   setOnboardingCompleted,
 } from './lib/storage';
 import { triggerHaptic } from './lib/soundbox';
-import { ArrowRight, Trash2, ShieldCheck, Sparkles, HelpCircle, Wifi, QrCode } from 'lucide-react';
+import { ArrowRight, Trash2, ShieldCheck, Sparkles, HelpCircle, Banknote, QrCode } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 export const App: React.FC = () => {
@@ -127,7 +126,7 @@ export const App: React.FC = () => {
     amount: number,
     summary: string,
     method: PaymentMethod,
-    cardDetails?: CardPaymentDetails
+    bankName?: string
   ) => {
     const newRecord: SaleRecord = {
       id: `sale_${Date.now()}`,
@@ -135,7 +134,7 @@ export const App: React.FC = () => {
       amount,
       itemsSummary: summary,
       method,
-      cardDetails,
+      bankName,
       status: 'completed',
     };
 
@@ -147,12 +146,7 @@ export const App: React.FC = () => {
     // Automatically open digital receipt voucher
     setReceiptSale(newRecord);
 
-    const methodLabel =
-      method === 'nfc_card'
-        ? `Tarjeta ${cardDetails?.brand || ''}`
-        : method === 'cash'
-        ? 'Efectivo'
-        : 'SPEI QR';
+    const methodLabel = method === 'cash' ? 'Efectivo' : bankName ? `SPEI (${bankName})` : 'SPEI QR';
 
     toast.success(`Venta de $${amount.toFixed(2)} (${methodLabel}) registrada`, {
       duration: 3000,
@@ -247,10 +241,10 @@ export const App: React.FC = () => {
             {/* Methods Badges */}
             <div className="flex items-center gap-1 shrink-0">
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                <QrCode className="w-3 h-3" /> SPEI QR
+                <QrCode className="w-3 h-3" /> SPEI 0%
               </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold">
-                <Wifi className="w-3 h-3 rotate-90" /> NFC
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
+                <Banknote className="w-3 h-3" /> Efectivo
               </span>
             </div>
           </div>
@@ -300,39 +294,32 @@ export const App: React.FC = () => {
         />
       </main>
 
-      {/* Bottom Floating Charge Button */}
-      <footer className="p-3.5 bg-[#0b0e16]/95 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-20 space-y-1.5">
+      {/* Charge Action Button */}
+      <footer className="p-3.5 bg-[#0b0e17] border-t border-slate-800/90 shadow-2xl">
         <button
           type="button"
-          disabled={grandTotal <= 0}
           onClick={handleStartCharge}
-          className={`w-full py-4 px-6 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-150 shadow-lg ${
+          disabled={grandTotal <= 0}
+          className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-between transition active:scale-[0.99] shadow-xl ${
             grandTotal > 0
-              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.98]'
-              : 'bg-slate-800 text-slate-500 border border-slate-700/60 opacity-60 cursor-not-allowed'
+              ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/25'
+              : 'bg-slate-800/80 text-slate-500 cursor-not-allowed border border-slate-700/50'
           }`}
         >
-          <Sparkles className="w-5 h-5 fill-slate-950" />
-          <span>COBRAR ${grandTotal.toFixed(2)}</span>
-          <ArrowRight className="w-5 h-5 stroke-[3]" />
-        </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className={`w-5 h-5 ${grandTotal > 0 ? 'fill-slate-950 text-slate-950' : 'text-slate-500'}`} />
+            <span>Cobrar Venta</span>
+          </div>
 
-        <div className="flex items-center justify-between text-[10px] text-slate-500 px-1">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Sin intermediarios ni retención de dinero
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowSoundboxGuide(true)}
-            className="text-slate-400 hover:text-emerald-400 flex items-center gap-0.5"
-          >
-            <HelpCircle className="w-3 h-3" /> Guía de cobro
-          </button>
-        </div>
+          <div className="flex items-center gap-2 font-mono text-base font-black">
+            <span>${grandTotal.toFixed(2)}</span>
+            <ArrowRight className="w-5 h-5" />
+          </div>
+        </button>
       </footer>
 
-      {/* Modals */}
+      {/* MODALS */}
+      {/* 1. Active Charge Modal */}
       {showActiveCharge && (
         <ActiveChargeModal
           amount={grandTotal}
@@ -343,6 +330,7 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* 2. Business Settings */}
       {showSettings && (
         <SettingsModal
           profile={profile}
@@ -355,6 +343,20 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* 3. Daily Sales / Corte de Caja */}
+      {showDailyStats && (
+        <DailySalesModal
+          sales={sales}
+          dailyStats={dailyStats}
+          onSelectSale={(sale) => {
+            setShowDailyStats(false);
+            setReceiptSale(sale);
+          }}
+          onClose={() => setShowDailyStats(false)}
+        />
+      )}
+
+      {/* 4. Counter Poster (Cartel Imprimible) */}
       {showPoster && (
         <StallPosterModal
           profile={profile}
@@ -362,39 +364,34 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* 5. Product / Menu Manager */}
       {showProductManager && (
         <ProductManagerModal
           products={products}
-          category={profile.businessCategory}
+          businessCategory={profile.businessCategory}
           onSaveProducts={handleSaveProducts}
           onClose={() => setShowProductManager(false)}
         />
       )}
 
-      {showDailyStats && (
-        <DailySalesModal
-          sales={sales}
-          dailyStats={dailyStats}
-          onClose={() => setShowDailyStats(false)}
-          onSelectSale={(sale) => {
-            setShowDailyStats(false);
-            setReceiptSale(sale);
-          }}
-        />
-      )}
-
+      {/* 6. Virtual Soundbox Guide */}
       {showSoundboxGuide && (
         <SoundboxGuideModal
+          profile={profile}
           onClose={() => setShowSoundboxGuide(false)}
         />
       )}
 
+      {/* 7. Digital Receipt Voucher */}
       {receiptSale && (
         <DigitalReceiptModal
           sale={receiptSale}
           profile={profile}
           onClose={() => setReceiptSale(null)}
-          onNewSale={() => setReceiptSale(null)}
+          onNewSale={() => {
+            setReceiptSale(null);
+            handleClear();
+          }}
         />
       )}
     </div>

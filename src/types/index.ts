@@ -7,7 +7,7 @@ export type BusinessCategory =
   | 'tecnologia'
   | 'general';
 
-export type PaymentMethod = 'spei_qr' | 'nfc_card' | 'cash';
+export type PaymentMethod = 'spei_qr' | 'cash';
 
 export interface MexicanBank {
   code: string;
@@ -32,7 +32,7 @@ export interface MerchantProfile {
   voiceRate: number;
   voicePitch: number;
   enableHaptics: boolean;
-  enableNfcTap: boolean;
+  enableBankAutoDetection: boolean; // Detección automática por notificaciones push bancarias
   alwaysOnDisplay: boolean;
   isConfigured: boolean; // Ha completado el setup inicial
 }
@@ -50,14 +50,6 @@ export interface CartItem {
   qty: number;
 }
 
-export interface CardPaymentDetails {
-  brand: 'Visa' | 'Mastercard' | 'Carnet' | 'Amex' | 'Desconocida';
-  last4: string;
-  authCode: string;
-  holderName?: string;
-  aid?: string;
-}
-
 export interface SaleRecord {
   id: string;
   timestamp: number;
@@ -65,7 +57,7 @@ export interface SaleRecord {
   itemsSummary: string;
   method: PaymentMethod;
   payerName?: string;
-  cardDetails?: CardPaymentDetails;
+  bankName?: string;
   status: 'completed' | 'pending';
 }
 
@@ -75,6 +67,5 @@ export interface DailyStats {
   totalSales: number;
   averageTicket: number;
   speiSalesCount: number;
-  nfcSalesCount: number;
   cashSalesCount: number;
 }

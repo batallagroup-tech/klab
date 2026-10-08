@@ -53,11 +53,9 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
       `📦 *Detalle:* ${sale.itemsSummary || 'Venta'}\n` +
       `💵 *TOTAL PAGADO:* $${sale.amount.toFixed(2)} MXN\n` +
       `💳 *Método:* ${
-        sale.method === 'nfc_card'
-          ? `Tarjeta ${sale.cardDetails?.brand || ''} (••••${sale.cardDetails?.last4 || ''})`
-          : sale.method === 'cash'
+        sale.method === 'cash'
           ? 'Efectivo'
-          : `SPEI QR (${bank?.name || profile.bankName})`
+          : `SPEI QR (${sale.bankName || bank?.name || profile.bankName})`
       }\n` +
       `✓ *Estado:* PAGADO Y CONFIRMADO\n\n` +
       `━━━━━━━━━━━━━━━━━━━\n` +
@@ -182,10 +180,10 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
               <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-center gap-1 font-medium">
                 <span>Método:</span>
                 <strong className="text-white">
-                  {sale.method === 'nfc_card'
-                    ? `Tarjeta Contactless (••••${sale.cardDetails?.last4 || ''})`
-                    : sale.method === 'cash'
+                  {sale.method === 'cash'
                     ? 'Efectivo'
+                    : sale.bankName
+                    ? `SPEI QR (${sale.bankName})`
                     : 'SPEI QR Directo'}
                 </strong>
               </div>

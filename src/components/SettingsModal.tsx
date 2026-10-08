@@ -291,6 +291,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
+          {/* Section 4: Auto Bank Notification Detector */}
+          <div className="space-y-3 pt-2 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Auto-Detección SPEI (Notificaciones)</span>
+              </h4>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.enableBankAutoDetection}
+                  onChange={(e) => setFormData({ ...formData, enableBankAutoDetection: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            {formData.enableBankAutoDetection && (
+              <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
+                <p className="text-[11px] text-slate-400">
+                  Detecta en tiempo real las notificaciones push de tu app bancaria (BBVA, Nu, MP, Banorte, STP, etc.) al recibir un SPEI y marca el cobro como pagado en automático.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Section 4: Re-run setup */}
           {onResetOnboarding && (
             <div className="pt-2 border-t border-slate-800/80 text-center">
