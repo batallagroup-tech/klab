@@ -254,33 +254,33 @@
 
     const BANK_SCHEMES = {
       bbva: {
-        scheme: 'bbva://',
-        intent: 'intent://#Intent;package=com.bbva.bbvamx;scheme=bbva;end',
+        scheme: (c, m) => `bbva://transfer?clabe=${c}&amount=${m}&concept=PAGO+KLAB`,
+        intent: (c, m) => `intent://transfer?clabe=${c}&amount=${m}#Intent;package=com.bbva.bbvamx;scheme=bbva;S.clabe=${c};S.amount=${m};end`,
         name: 'BBVA'
       },
       nu: {
-        scheme: 'nuapp://',
-        intent: 'intent://#Intent;package=com.nu.production;scheme=nuapp;end',
+        scheme: (c, m) => `nuapp://transfer?clabe=${c}&amount=${m}`,
+        intent: (c, m) => `intent://transfer?clabe=${c}&amount=${m}#Intent;package=com.nu.production;scheme=nuapp;S.clabe=${c};S.amount=${m};end`,
         name: 'Nu México'
       },
       mp: {
-        scheme: 'mercadopago://',
-        intent: 'intent://#Intent;package=com.mercadopago.wallet;scheme=mercadopago;end',
+        scheme: (c, m) => `mercadopago://wallet/transfer?clabe=${c}&amount=${m}`,
+        intent: (c, m) => `intent://wallet/transfer?clabe=${c}&amount=${m}#Intent;package=com.mercadopago.wallet;scheme=mercadopago;S.clabe=${c};S.amount=${m};end`,
         name: 'Mercado Pago'
       },
       banorte: {
-        scheme: 'banorte://',
-        intent: 'intent://#Intent;package=com.banorte.mimovil;scheme=banorte;end',
+        scheme: (c, m) => `banorte://transfer?clabe=${c}&amount=${m}`,
+        intent: (c, m) => `intent://transfer?clabe=${c}&amount=${m}#Intent;package=com.banorte.mimovil;scheme=banorte;S.clabe=${c};S.amount=${m};end`,
         name: 'Banorte'
       },
       santander: {
-        scheme: 'santandermx://',
-        intent: 'intent://#Intent;package=mx.santander.smartphone;scheme=santandermx;end',
+        scheme: (c, m) => `santandermx://transfer?clabe=${c}&amount=${m}`,
+        intent: (c, m) => `intent://transfer?clabe=${c}&amount=${m}#Intent;package=mx.santander.smartphone;scheme=santandermx;S.clabe=${c};S.amount=${m};end`,
         name: 'Santander'
       },
       azteca: {
-        scheme: 'bancoazteca://',
-        intent: 'intent://#Intent;package=com.ba.mobile;scheme=bancoazteca;end',
+        scheme: (c, m) => `bancoazteca://transfer?clabe=${c}&amount=${m}`,
+        intent: (c, m) => `intent://transfer?clabe=${c}&amount=${m}#Intent;package=com.ba.mobile;scheme=bancoazteca;S.clabe=${c};S.amount=${m};end`,
         name: 'Banco Azteca'
       }
     };
@@ -289,20 +289,32 @@
       const b = BANK_SCHEMES[bankKey];
       if (!b) return;
 
+      const currentAmount = parseFloat(amountInput.value) || amount || 0;
       copyClabe(true);
-      showToast(`¡CLABE copiada! Abriendo ${b.name}... Pega la CLABE y autoriza con tu huella/Face ID.`);
+      showToast(`¡Datos preparados! Abriendo ${b.name}... Pega la CLABE ($${currentAmount.toFixed(2)}) y autoriza con tu huella/Face ID.`);
+
+      const targetScheme = typeof b.scheme === 'function' ? b.scheme(clabe, currentAmount) : b.scheme;
+      const targetIntent = typeof b.intent === 'function' ? b.intent(clabe, currentAmount) : b.intent;
 
       setTimeout(() => {
-        // Try direct scheme first
-        window.location.href = b.scheme;
+        // Direct custom URI scheme with parameters
+        window.location.href = targetScheme;
         
-        // Fallback for Android intent
+        // Fallback for Android intent with extra bundle data
         setTimeout(() => {
-          if (b.intent) {
-            window.location.href = b.intent;
+          if (targetIntent) {
+            window.location.href = targetIntent;
           }
-        }, 600);
+        }, 500);
       }, 300);
+    }
+
+    function openCodi() {
+      const currentAmount = parseFloat(amountInput.value) || amount || 0;
+      copyClabe(true);
+      showToast(`Abriendo CoDi de Banxico... Monto: $${currentAmount.toFixed(2)}`);
+      const codiUri = `codi://pay?c=${clabe}&m=${currentAmount}&n=${encodeURIComponent(owner||biz)}`;
+      window.location.href = codiUri;
     }
 
     function sendVoucherWhatsApp() {
