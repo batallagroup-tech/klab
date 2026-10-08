@@ -7,16 +7,19 @@ import { triggerHaptic } from '../lib/soundbox';
 interface ProductManagerModalProps {
   products: QuickProduct[];
   category?: BusinessCategory;
+  businessCategory?: BusinessCategory;
   onSaveProducts: (products: QuickProduct[]) => void;
   onClose: () => void;
 }
 
 export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
   products,
-  category = 'comida',
+  category,
+  businessCategory,
   onSaveProducts,
   onClose,
 }) => {
+  const activeCategory = businessCategory || category || 'general';
   const [items, setItems] = useState<QuickProduct[]>([...products]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
@@ -77,8 +80,18 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
 
   const handleLoadCategoryPresets = () => {
     triggerHaptic();
-    const tmpl = CATEGORY_TEMPLATES[category]?.products || [];
+    const tmpl = CATEGORY_TEMPLATES[activeCategory]?.products || [];
     setItems(tmpl);
+  };
+
+  const handleClearAll = () => {
+    triggerHaptic();
+    if (window.confirm('¿Deseas vaciar todos los botones rápidos? La terminal quedará solo con la calculadora numérica.')) {
+      setItems([]);
+      setEditingId(null);
+      setNewName('');
+      setNewPrice('');
+    }
   };
 
   const handleSaveAll = () => {
@@ -93,7 +106,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-[#111624]">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <span>⚡</span> Catálogo de Botones Rápidos
+            <span>⚡</span> Personalizar Botonera Rápida
           </h3>
           <button
             type="button"
@@ -112,12 +125,12 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
           {/* Add / Edit Form */}
           <form onSubmit={handleAddOrUpdate} className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
             <span className="text-[11px] font-bold uppercase text-slate-400 block">
-              {editingId ? 'Editar Botón' : 'Agregar Nuevo Botón'}
+              {editingId ? '✏️ Editando Botón Seleccionado' : '➕ Crear Nuevo Botón Personalizado'}
             </span>
 
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-1">
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Emoji</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Icono</label>
                 <select
                   value={newEmoji}
                   onChange={(e) => setNewEmoji(e.target.value)}
@@ -132,13 +145,13 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nombre</label>
+                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nombre del producto</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Ej. Torta Especial"
+                  placeholder="Ej. Torta de Pastor"
                   className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -163,7 +176,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
                 className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition"
               >
                 {editingId ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                <span>{editingId ? 'Actualizar Botón' : 'Agregar a la Botonera'}</span>
+                <span>{editingId ? 'Guardar Cambios del Botón' : 'Agregar Botón a la Pantalla'}</span>
               </button>
               {editingId && (
                 <button
@@ -185,22 +198,36 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase text-slate-400">
-                Botones Configurados ({items.length})
+                Botones en Pantalla ({items.length})
               </span>
-              {category !== 'general' && (
-                <button
-                  type="button"
-                  onClick={handleLoadCategoryPresets}
-                  className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" /> Cargar sugeridos de {CATEGORY_TEMPLATES[category].label}
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="text-[11px] text-red-400 hover:text-red-300 font-semibold flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Vaciar todo
+                  </button>
+                )}
+                {activeCategory !== 'general' && (
+                  <button
+                    type="button"
+                    onClick={handleLoadCategoryPresets}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Cargar sugeridos de {CATEGORY_TEMPLATES[activeCategory].label}
+                  </button>
+                )}
+              </div>
             </div>
 
             {items.length === 0 ? (
-              <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-500">
-                No hay botones configurados. Puedes agregar los tuyos arriba.
+              <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-1">
+                <span className="text-xs font-bold text-slate-300 block">No tienes botones configurados</span>
+                <p className="text-[11px] text-slate-500">
+                  La terminal funcionará como calculadora directa. Si quieres atajos para cobrar productos rápido, agrega uno arriba.
+                </p>
               </div>
             ) : (
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">

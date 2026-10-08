@@ -1,6 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SaleRecord, DailyStats } from '../types';
-import { X, TrendingUp, Clock, CheckCircle2, Banknote, QrCode, FileSpreadsheet, Cloud } from 'lucide-react';
+import {
+  X,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  Banknote,
+  QrCode,
+  FileSpreadsheet,
+  Trash2,
+  RotateCcw,
+  AlertTriangle,
+} from 'lucide-react';
 import { triggerHaptic } from '../lib/soundbox';
 
 interface DailySalesModalProps {
@@ -9,6 +20,9 @@ interface DailySalesModalProps {
   onClose: () => void;
   onSelectSale?: (sale: SaleRecord) => void;
   onOpenBackup?: () => void;
+  onDeleteSale?: (saleId: string) => void;
+  onClearTodaySales?: () => void;
+  onClearAllSales?: () => void;
 }
 
 export const DailySalesModal: React.FC<DailySalesModalProps> = ({
@@ -17,7 +31,13 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
   onClose,
   onSelectSale,
   onOpenBackup,
+  onDeleteSale,
+  onClearTodaySales,
+  onClearAllSales,
 }) => {
+  const [confirmClearToday, setConfirmClearToday] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
   const today = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter((s) => {
     const d = new Date(s.timestamp).toISOString().split('T')[0];
@@ -83,9 +103,56 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
 
           {/* Sales History List */}
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Ventas de Hoy ({todaySales.length})
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Ventas de Hoy ({todaySales.length})
+              </h4>
+              {todaySales.length > 0 && onClearTodaySales && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setConfirmClearToday(true);
+                  }}
+                  className="text-[11px] font-bold text-red-400 hover:text-red-300 flex items-center gap-1 active:scale-95 transition"
+                >
+                  <Trash2 className="w-3 h-3" /> Borrar Hoy
+                </button>
+              )}
+            </div>
+
+            {/* Confirmation Box for Clear Today */}
+            {confirmClearToday && (
+              <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-2xl space-y-2 text-center animate-in fade-in">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>¿Borrar los cobros de hoy?</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  El corte del día volverá a $0.00. Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-2 justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      if (onClearTodaySales) onClearTodaySales();
+                      setConfirmClearToday(false);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs active:scale-95 transition"
+                  >
+                    Sí, borrar corte de hoy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearToday(false)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
 
             {todaySales.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-xs bg-[#141829]/50 border border-slate-800/60 rounded-2xl">
@@ -102,17 +169,17 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                   return (
                     <div
                       key={s.id}
-                      onClick={() => {
-                        if (onSelectSale) {
-                          triggerHaptic();
-                          onSelectSale(s);
-                        }
-                      }}
-                      className={`flex items-center justify-between p-3 rounded-xl bg-[#131726] border border-slate-800/90 transition ${
-                        onSelectSale ? 'hover:border-emerald-500/40 hover:bg-[#161b2e] cursor-pointer active:scale-[0.99]' : ''
-                      }`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#131726] border border-slate-800/90 transition hover:border-slate-700 group"
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div
+                        onClick={() => {
+                          if (onSelectSale) {
+                            triggerHaptic();
+                            onSelectSale(s);
+                          }
+                        }}
+                        className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+                      >
                         <div
                           className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
                             s.method === 'cash'
@@ -126,15 +193,15 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                             <QrCode className="w-4 h-4" />
                           )}
                         </div>
-                        <div>
-                          <div className="text-xs font-bold text-white leading-tight">
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-white leading-tight truncate">
                             {s.itemsSummary || 'Cobro directo'}
                           </div>
                           <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-2.5 h-2.5" />
+                            <Clock className="w-2.5 h-2.5 shrink-0" />
                             <span>{time}</span>
                             <span>•</span>
-                            <span className="capitalize font-medium">
+                            <span className="capitalize font-medium truncate">
                               {s.method === 'cash'
                                 ? 'Efectivo'
                                 : s.bankName
@@ -145,13 +212,32 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="font-mono text-sm font-black text-emerald-400 block">
-                          +${s.amount.toFixed(2)}
-                        </span>
-                        <span className="text-[9px] font-bold text-emerald-500 flex items-center justify-end gap-0.5">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> Pagado
-                        </span>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <div className="text-right">
+                          <span className="font-mono text-sm font-black text-emerald-400 block">
+                            +${s.amount.toFixed(2)}
+                          </span>
+                          <span className="text-[9px] font-bold text-emerald-500 flex items-center justify-end gap-0.5">
+                            <CheckCircle2 className="w-2.5 h-2.5" /> Pagado
+                          </span>
+                        </div>
+
+                        {onDeleteSale && (
+                          <button
+                            type="button"
+                            title="Eliminar este cobro"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerHaptic();
+                              if (window.confirm(`¿Eliminar cobro de $${s.amount.toFixed(2)}?`)) {
+                                onDeleteSale(s.id);
+                              }
+                            }}
+                            className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center active:scale-95 transition opacity-80 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -174,6 +260,22 @@ export const DailySalesModal: React.FC<DailySalesModalProps> = ({
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span>Exportar Excel / Nube</span>
+            </button>
+          )}
+
+          {sales.length > 0 && onClearAllSales && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic();
+                if (window.confirm('¿Deseas vaciar todo el historial histórico de ventas acumulado?')) {
+                  onClearAllSales();
+                }
+              }}
+              className="py-2.5 px-3 rounded-xl bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 text-red-300 font-bold text-xs flex items-center justify-center gap-1 active:scale-95 transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Vaciar Historial</span>
             </button>
           )}
 

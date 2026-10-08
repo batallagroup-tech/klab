@@ -192,6 +192,52 @@ export function saveSale(sale: SaleRecord): SaleRecord[] {
   }
 }
 
+export function deleteSale(saleId: string): SaleRecord[] {
+  try {
+    const current = loadSales();
+    const updated = current.filter((s) => s.id !== saleId);
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function clearTodaySales(): SaleRecord[] {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const current = loadSales();
+    const updated = current.filter((s) => {
+      const saleDate = new Date(s.timestamp).toISOString().split('T')[0];
+      return saleDate !== today;
+    });
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function clearAllSales(): SaleRecord[] {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify([]));
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function resetAllData(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.PROFILE);
+    localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+    localStorage.removeItem(STORAGE_KEYS.SALES);
+    localStorage.removeItem(STORAGE_KEYS.ONBOARDING_DONE);
+  } catch (e) {
+    console.error('Error resetting all data:', e);
+  }
+}
+
 export function getDailyStats(sales: SaleRecord[]): DailyStats {
   const today = new Date().toISOString().split('T')[0];
   const todaySales = sales.filter((s) => {

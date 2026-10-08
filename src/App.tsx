@@ -231,6 +231,25 @@ export const App: React.FC = () => {
     }
   };
 
+  // Sales Management Handlers
+  const handleDeleteSale = (saleId: string) => {
+    const updated = deleteSale(saleId);
+    setSales(updated);
+    toast.success('Cobro eliminado del registro', { duration: 2000 });
+  };
+
+  const handleClearTodaySales = () => {
+    const updated = clearTodaySales();
+    setSales(updated);
+    toast.success('Corte de caja de hoy reiniciado a $0.00', { duration: 2500 });
+  };
+
+  const handleClearAllSales = () => {
+    const updated = clearAllSales();
+    setSales(updated);
+    toast.success('Historial de cobros vaciado por completo', { duration: 2500 });
+  };
+
   // Handle data restored from backup
   const handleDataRestored = () => {
     const updatedProfile = loadProfile();
@@ -469,6 +488,9 @@ export const App: React.FC = () => {
             setShowDailyStats(false);
             setReceiptSale(sale);
           }}
+          onDeleteSale={handleDeleteSale}
+          onClearTodaySales={handleClearTodaySales}
+          onClearAllSales={handleClearAllSales}
           onClose={() => setShowDailyStats(false)}
         />
       )}
